@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using SharpDX.DirectInput;
 
 namespace Catalyst.Input
 {
@@ -197,6 +198,27 @@ namespace Catalyst.Input
         }
 
         /// <summary>
+        /// Parse a 
+        /// </summary>
+        /// <param name="sharpDXCode"></param>
+        /// <returns></returns>
+        public static DIKCode Parse(Key sharpDXCode)
+        {
+            try
+            {
+                return (DIKCode)sharpDXCode;
+            }
+            catch (InvalidCastException e)
+            {
+                throw new ArgumentException(
+                    "The key code provided is not supported by Catalyst.",
+                    "code",
+                    e
+                );
+            }
+        }
+
+        /// <summary>
         /// Parse an integer representing a DIK code to its representing enum value.
         /// </summary>
         /// <param name="code"></param>
@@ -246,6 +268,28 @@ namespace Catalyst.Input
                     e
                 );
             }
+        }
+
+        /* EXTENSION METHODS */
+
+        /// <summary>
+        /// convert this DIK code to a SharpDX key.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        public static Key ToSharpDXCode(this DIKCode code)
+        {
+            return (Key)code;
+        }
+
+        /// <summary>
+        /// Convert a SharpDX keycode to the appropriate DIKCode.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        public static DIKCode ToDIKCode(this Key code)
+        {
+            return Parse(code);
         }
     }
 }
