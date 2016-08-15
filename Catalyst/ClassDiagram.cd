@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Catalyst.Core.JsonPathList" Collapsed="true">
+    <Position X="21" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAEAAAAAAAAAAA=</HashCode>
+      <FileName>Core\JsonPathList.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Input.DIKCodes" Collapsed="true">
+    <Position X="17.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgAAAAAAAAAAAAAAAAACAAAAAAAIAAAAAAAAAAAAA=</HashCode>
+      <FileName>Input\DIKCodes.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Input.InputBinding" Collapsed="true">
+    <Position X="19.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAACAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Input\InputBinding.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Input.RawMouseCode" Collapsed="true">
+    <Position X="17.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAIAAEABAAAAA=</HashCode>
+      <FileName>Input\MouseCode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Settings.AudioSettings" Collapsed="true">
+    <Position X="8.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAQAAAAQAAAAAAAAAAAAAAAAAIAAAAAEAAAA=</HashCode>
+      <FileName>Settings\AudioSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Settings.ControlSettings" Collapsed="true">
+    <Position X="10.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAwgAACAgAAABAABAAYAUAAAAIQAEAAgAAIAA=</HashCode>
+      <FileName>Settings\ControlSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Settings.MouseSettings" Collapsed="true">
+    <Position X="12.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAEACAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Settings\MouseSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Settings.Settings" Collapsed="true">
+    <Position X="19.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAABAAAABAQAUAAAAAAAAAAAAAAAAgAAAAAAg=</HashCode>
+      <FileName>Settings\Settings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Settings.SettingsCategory" Collapsed="true">
+    <Position X="11.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAEAAABACAAAAAAAAAAAIAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Settings\SettingsCategory.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Catalyst.Settings.VideoSettings" Collapsed="true">
+    <Position X="15" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAEAAoAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Settings\VideoSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="Catalyst.Input.DIKCode" Collapsed="true">
+    <Position X="21" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BMZZAcmzCoMlAFI4mIKkQrCeZRRADBg6wlqBrtcGBpQ=</HashCode>
+      <FileName>Input\DIKCodes.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Catalyst.Input.MouseCode" Collapsed="true">
+    <Position X="19.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAEABAAAAAAAACACQAAEAAAA=</HashCode>
+      <FileName>Input\MouseCode.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Catalyst.Settings.AudioChannelConfiguration" Collapsed="true">
+    <Position X="17.5" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAA=</HashCode>
+      <FileName>Settings\AudioSettings.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Catalyst.Settings.AudioSpeakerType" Collapsed="true">
+    <Position X="19.25" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAQAAAAAAAAAEAAAAAAAAAAAAAAAAAIAAA=</HashCode>
+      <FileName>Settings\AudioSettings.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Catalyst.Settings.FullscreenMode" Collapsed="true">
+    <Position X="17.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIAAAAAAAAAAQAAAAAAAAAAAIAAAAAAAAAAAA=</HashCode>
+      <FileName>Settings\VideoSettings.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

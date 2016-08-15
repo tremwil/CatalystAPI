@@ -1,0 +1,40 @@
+BUTTON VALUES:
+
+type 0 - DIK code
+type 1 - Mouse 
+		Axes: 
+			1
+		     2     4
+			3
+		so mousewheel up/down is axis 13, and M1-M3 is axis 24
+
+		M1, M2, M3 = button 1-3
+		button 8 = mousewheel - negate = flip up/down
+	
+
+type 2 - Controller (N/A)
+
+MOUSE CLASS NAMES (GstInput):
+
+ControllerLayout - n/a
+MouseSensivity - Mouse sensivity
+Scheme0FlipY - (bool) flip Y axis
+Scheme0Sensivity - Controller sensivity (N/A)
+Vibration - (bool) vibrate (N/A)
+
+CONTROL CLASS NAMES (namespace GstKeyBinding.default):
+
+AltFire - Disrupt (F)
+ButtonRightThumb - Runners vision (Alt)
+Crawl - Walk slow (Shift)
+Crouch - Down actions (Ctrl)
+Fire - light Attack (M3)
+Interact - Interact (E)
+Jump - Jump (Space)
+
+MouseLeft - Heavy Attack (M1)
+MouseMiddle - Quickturn (Q)
+MouseRight - Shift (M2)
+Move(F,L,B,R) - Movement (WASD)
+SelectInventoryItem9 - CreateUGC (U)
+ToggleScoreboard - Map View (Tab)
