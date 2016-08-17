@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace Catalyst.RuntimeInfo
+namespace Catalyst.Memory
 {
     /// <summary>
     /// A set of method for converting generic objects to bytes and vice-versa.

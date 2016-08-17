@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 // No documentation for unmanaged functions
 #pragma warning disable 1591
 
-using Catalyst.RuntimeInfo;
+using Catalyst.Memory;
 namespace Catalyst.Unmanaged
 {
     /// <summary>

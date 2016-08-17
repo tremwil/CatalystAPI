@@ -7,7 +7,7 @@ using Catalyst.Mathf;
 using System.Diagnostics;
 
 using Catalyst.Unmanaged;
-namespace Catalyst.RuntimeInfo
+namespace Catalyst.Memory
 {
     /// <summary>
     /// A few useful values collected from game memory.

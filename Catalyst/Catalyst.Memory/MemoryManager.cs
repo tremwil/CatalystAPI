@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Catalyst.Unmanaged;
 
-namespace Catalyst.RuntimeInfo
+namespace Catalyst.Memory
 {
     /// <summary>
     /// A class to manage process memory.

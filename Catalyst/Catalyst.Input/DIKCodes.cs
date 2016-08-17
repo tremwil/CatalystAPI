@@ -291,5 +291,15 @@ namespace Catalyst.Input
         {
             return Parse(code);
         }
+
+        /// <summary>
+        /// Conver this DIK code to its corresponding AutoItX string.
+        /// </summary>
+        /// <param name="code">The DIK code to convert.</param>
+        /// <returns></returns>
+        public static string ToAutoItString(this DIKCode code)
+        {
+            return ToAutoItString(code);
+        }
     }
 }

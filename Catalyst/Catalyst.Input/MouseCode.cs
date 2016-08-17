@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace Catalyst.Input
 {
@@ -47,9 +48,35 @@ namespace Catalyst.Input
     }
 
     /// <summary>
+    /// A class containing extension methods for the MouseCode enum.
+    /// </summary>
+    public static class MouseCodes
+    {
+        /// <summary>
+        /// The normal button axis (left, middle, right).
+        /// </summary>
+        public static int NormalAxis => 24;
+        /// <summary>
+        /// The mousewheel axis.
+        /// </summary>
+        public static int MousewheelAxis => 13;
+
+        /// <summary>
+        /// Convert this mouse code to a raw code.
+        /// </summary>
+        /// <param name="code">The code.</param>
+        /// <returns></returns>
+        public static RawMouseCode ToRawCode(this MouseCode code)
+        {
+            return new RawMouseCode(code);
+        }
+    }
+
+    /// <summary>
     /// A class to handle raw game codes.
     /// </summary>
-    public class RawMouseCode
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RawMouseCode
     {
         /// <summary>
         /// The axis of the code.

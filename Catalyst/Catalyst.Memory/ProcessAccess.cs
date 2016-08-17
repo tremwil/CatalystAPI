@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Catalyst.RuntimeInfo
+namespace Catalyst.Memory
 {
     /// <summary>
     /// Used to request usage of a process handle for given actvities.

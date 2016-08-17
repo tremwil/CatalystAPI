@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 #pragma warning disable 1591
 
-namespace Catalyst.RuntimeInfo
+namespace Catalyst.Memory
 {
     /// <summary>
     /// The different movements in the game.

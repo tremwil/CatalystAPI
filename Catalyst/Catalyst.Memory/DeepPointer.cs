@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Catalyst.Unmanaged;
 using System.Diagnostics;
 
-namespace Catalyst.RuntimeInfo
+namespace Catalyst.Memory
 {
     /// <summary>
     /// Represents a system of muliple nested pointers.

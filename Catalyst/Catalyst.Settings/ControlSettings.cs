@@ -41,6 +41,19 @@ namespace Catalyst.Settings
         };
 
         /// <summary>
+        /// Return an array containing all current input bindings.
+        /// </summary>
+        /// <returns></returns>
+        public InputBinding[] AsArray()
+        {
+            var arr = new InputBinding[16];
+            for (int i = 0; i < GameActions.Amount; i++)
+                arr[i] = this[(GameAction)i];
+
+            return arr;
+        }
+
+        /// <summary>
         /// Get the keybindings for a specific action.
         /// </summary>
         /// <param name="action">The action to get keybindings for.</param>

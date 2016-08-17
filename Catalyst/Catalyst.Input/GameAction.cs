@@ -31,4 +31,13 @@ namespace Catalyst.Input
         MapView,
         CreateUGC
     }
+
+    /// <summary>
+    /// A bunch of methods regarding the GameAction enum.
+    /// </summary>
+    public static class GameActions
+    {
+        public static int Amount =>
+            Enum.GetValues(typeof(GameAction)).Length;
+    }
 }

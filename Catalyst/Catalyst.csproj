@@ -66,27 +66,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Input\GameAction.cs" />
-    <Compile Include="Input\ActionController.cs" />
-    <Compile Include="RuntimeInfo\MovementState.cs" />
-    <Compile Include="RuntimeInfo\ProcessAccess.cs" />
-    <Compile Include="Settings\JsonPathList.cs" />
-    <Compile Include="Input\InputBinding.cs" />
-    <Compile Include="Input\MouseCode.cs" />
-    <Compile Include="RuntimeInfo\MemoryManager.cs" />
-    <Compile Include="Mathf\Vec3.cs" />
-    <Compile Include="RuntimeInfo\DeepPointer.cs" />
-    <Compile Include="RuntimeInfo\GameInformation.cs" />
-    <Compile Include="Settings\AudioSettings.cs" />
-    <Compile Include="Settings\ControlSettings.cs" />
-    <Compile Include="Settings\MouseSettings.cs" />
-    <Compile Include="Settings\Settings.cs" />
-    <Compile Include="Settings\SettingsCategory.cs" />
-    <Compile Include="Input\DIKCodes.cs" />
+    <Compile Include="Catalyst.Input\GameAction.cs" />
+    <Compile Include="Catalyst.Input\InputController.cs" />
+    <Compile Include="Catalyst.Memory\MovementState.cs" />
+    <Compile Include="Catalyst.Memory\ProcessAccess.cs" />
+    <Compile Include="Catalyst.Settings\JsonPathList.cs" />
+    <Compile Include="Catalyst.Input\InputBinding.cs" />
+    <Compile Include="Catalyst.Input\MouseCode.cs" />
+    <Compile Include="Catalyst.Memory\MemoryManager.cs" />
+    <Compile Include="Catalyst.Mathf\Vec3.cs" />
+    <Compile Include="Catalyst.Memory\DeepPointer.cs" />
+    <Compile Include="Catalyst.Memory\GameInformation.cs" />
+    <Compile Include="Catalyst.Settings\AudioSettings.cs" />
+    <Compile Include="Catalyst.Settings\ControlSettings.cs" />
+    <Compile Include="Catalyst.Settings\MouseSettings.cs" />
+    <Compile Include="Catalyst.Settings\Settings.cs" />
+    <Compile Include="Catalyst.Settings\SettingsCategory.cs" />
+    <Compile Include="Catalyst.Input\DIKCodes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Settings\VideoSettings.cs" />
-    <Compile Include="RuntimeInfo\GenericBitConverter.cs" />
-    <Compile Include="Unmanaged\WinAPI.cs" />
+    <Compile Include="Catalyst.Settings\VideoSettings.cs" />
+    <Compile Include="Catalyst.Memory\GenericBitConverter.cs" />
+    <Compile Include="Catalyst.Unmanaged\WinAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Catalyst.ruleset" />
@@ -94,7 +94,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Core\" />
+    <Folder Include="Catalyst.Core\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
