@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catalyst", "Catalyst\Cataly
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryTestingProgram", "LibraryTestingProgram\LibraryTestingProgram.csproj", "{BAA9E357-E660-423F-AEF5-4DAC21E50BC9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catalyst.Scripter", "Catalyst.Scripter\Catalyst.Scripter.csproj", "{6ED52F92-BC69-4E3F-923C-1CBA6BDE5E1A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catalyst.Scripting", "Catalyst.Scripter\Catalyst.Scripting.csproj", "{6ED52F92-BC69-4E3F-923C-1CBA6BDE5E1A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

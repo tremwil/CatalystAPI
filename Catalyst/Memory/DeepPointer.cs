@@ -22,20 +22,20 @@ namespace Catalyst.Memory
         /// <summary>
         /// The static address to start reading from.
         /// </summary>
-        public long StaticAddress { get; set; }
+        public long StaticAddress { get; }
         /// <summary>
         /// The offsets between each read in memory.
         /// </summary>
-        public int[] Offsets { get; set; }
+        public int[] Offsets { get; }
 
         /// <summary>
         /// The handle of the process to read from.
         /// </summary>
-        public IntPtr ProcHandle { get; set; }
+        public IntPtr ProcHandle { get; }
         /// <summary>
         /// The base address of a specific module in the process.
         /// </summary>
-        public long ModuleBaseAddress { get; set; }
+        public long ModuleBaseAddress { get; }
 
         /// <summary>
         /// Create a DeepPointer from an already known handle and module address.

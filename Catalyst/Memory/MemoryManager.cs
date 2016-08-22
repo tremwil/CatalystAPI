@@ -243,6 +243,45 @@ namespace Catalyst.Memory
             return BitConverter.ToInt64(bytes, 0);
         }
 
+        /// <summary>
+        /// Read a generic value from a memory address.
+        /// </summary>
+        /// <typeparam name="T">The type to read.</typeparam>
+        /// <param name="memaddress"></param>
+        /// <returns></returns>
+        public T ReadGeneric<T>(long memaddress) where T : struct
+        {
+            int size = GenericBitConverter.GetTypeSize(typeof(T));
+            byte[] bytes = ReadByteArray(memaddress, size);
+            return GenericBitConverter.ToStruct<T>(bytes);
+        }
+
+        /// <summary>
+        /// Read a generic value from a pointer.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="moduleBaseAddress"></param>
+        /// <param name="staticAddress"></param>
+        /// <param name="offsets"></param>
+        /// <returns></returns>
+        public T ReadGenericPtr<T>(long moduleBaseAddress, long staticAddress, params int[] offsets) where T : struct
+        {
+            return new DeepPointer<T>(ProcHandle, moduleBaseAddress, staticAddress, offsets).GetValue();
+        }
+
+        /// <summary>
+        /// Read a generic value from a pointer.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="modulname"></param>
+        /// <param name="staticAddress"></param>
+        /// <param name="offsets"></param>
+        /// <returns></returns>
+        public T ReadGenericPtr<T>(string modulname, long staticAddress, params int[] offsets) where T : struct
+        {
+            return new DeepPointer<T>(ProcHandle, modulname, staticAddress, offsets).GetValue();
+        }
+
         private bool disposed = false;
 
         /// <summary>

@@ -4,15 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Catalyst.Mathf;
-using System.Diagnostics;
 
-using Catalyst.Unmanaged;
 namespace Catalyst.Memory
 {
     /// <summary>
-    /// A few useful values collected from game memory.
+    /// Information regarding the player.
     /// </summary>
-    public class GameInformation : IDisposable
+    public class PlayerInfo
     {
         /// <summary>
         /// A pointer to the cosine of the camera's yaw divided by two.
@@ -35,11 +33,6 @@ namespace Catalyst.Memory
         protected DeepPointer<Vec3> position;
 
         /// <summary>
-        /// A value to test if the game is loading.
-        /// </summary>
-        protected DeepPointer<byte> isLoading;
-
-        /// <summary>
         /// A value representing Faith's different movements.
         /// </summary>
         protected DeepPointer<MovementState> movement;
@@ -47,55 +40,40 @@ namespace Catalyst.Memory
         /// <summary>
         /// The memory manager.
         /// </summary>
-        public MemoryManager Memory { get; protected set; }
+        public MemoryManager MemManager { get; protected set; }
 
         // TODO : Better summary
         /// <summary>
-        /// Initialize a new instance of the GameInformation class.
+        /// Initialize a new instance of the PlayerInfo class.
         /// </summary>
-        public GameInformation()
+        public PlayerInfo(MemoryManager manager)
         {
-            Memory = new MemoryManager();
-            Memory.OpenProcess("MirrorsEdgeCatalyst");
-
-            // Pointers for position and loading were discovered
+            // Pointer for position was discovered
             // by https://github.com/Psp4804. All credits goes to
-            // him for these.
+            // him for it.
+
+            MemManager = manager;
 
             position = new DeepPointer<Vec3>(
-                Memory.ProcHandle,
+                MemManager.ProcHandle,
                 "MirrorsEdgeCatalyst.exe",
                 0x02578A68, 0x70, 0x98, 0x238, 0x20, 0x22d0
             );
             cosYawOver2 = new DeepPointer<float>(
-                Memory.ProcHandle,
+                MemManager.ProcHandle,
                 "MirrorsEdgeCatalyst.exe",
                 0x02578A68, 0x70, 0x98, 0x238, 0x20, 0x22cc
             );
             sinYawOver2 = new DeepPointer<float>(
-                Memory.ProcHandle,
+                MemManager.ProcHandle,
                 "MirrorsEdgeCatalyst.exe",
                 0x02578A68, 0x70, 0x98, 0x238, 0x20, 0x22c4
             );
-            isLoading = new DeepPointer<byte>(
-                Memory.ProcHandle,
-                "MirrorsEdgeCatalyst.exe",
-                0x240C2B8, 0x4C1
-            );
             movement = new DeepPointer<MovementState>(
-                Memory.ProcHandle,
+                MemManager.ProcHandle,
                 "MirrorsEdgeCatalyst.exe",
                 0x2576FDC
             );
-        }
-
-        /// <summary>
-        /// Returns true when the game is loading.
-        /// </summary>
-        /// <returns></returns>
-        public bool IsLoading()
-        {
-            return Convert.ToBoolean(isLoading.GetValue());
         }
 
         /// <summary>
@@ -131,7 +109,6 @@ namespace Catalyst.Memory
             return movement.GetValue();
         }
 
-
         private bool disposed = false;
 
         /// <summary>
@@ -141,11 +118,9 @@ namespace Catalyst.Memory
         {
             if (disposing && !disposed)
             {
-                Memory.Dispose();
                 position.Dispose();
                 sinYawOver2.Dispose();
                 cosYawOver2.Dispose();
-                isLoading.Dispose();
                 disposed = true;
             }
         }

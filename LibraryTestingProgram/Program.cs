@@ -7,53 +7,25 @@ using Catalyst;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
+using System.Windows.Forms;
 
-using Catalyst.RuntimeInfo;
-using Catalyst.Mathf;
+using Catalyst.Scripting;
 
 namespace LibraryTestingProgram
 {
     class Program
     {
+        static int num = 0;
+
+        [STAThread]
         static void Main(string[] args)
         {
-            var ginfo = new GameInformation();
+            OverlayForm overlay = new OverlayForm("notepad++");
+            overlay.Overlays.Add(new OverlayField("level : {0}", () => ++num));
+            overlay.Overlays.Add(new OverlayField("left  : {0}", () => 1000 - num));
 
-            while (true)
-            {
-                Vec3 previous = ginfo.GetPosition();
-                Vec3 current;
-                Vec3 velocity;
-
-                float deltaTime;
-                long lastTimeMS = 0;
-                long currentTimeMS;
-
-                Stopwatch watch = new Stopwatch();
-                watch.Start();
-
-                Thread.Sleep(20);
-
-                while (true)
-                {
-                    currentTimeMS = watch.ElapsedMilliseconds;
-                    deltaTime = (currentTimeMS - lastTimeMS) / 1000f;
-                    lastTimeMS = currentTimeMS;
-
-                    current = ginfo.GetPosition();
-                    velocity = (current - previous) / deltaTime;
-                    previous = current;
-
-                    Console.SetCursorPosition(0, 0);
-                    Console.WriteLine("delta time : {0}                         \n", deltaTime);
-                    Console.WriteLine("Position : {0}                         \n", current);
-                    Console.WriteLine("Velocity : {0}                         \n", velocity);
-                    Console.WriteLine("Yaw : {0} degrees                         \n", ginfo.GetYaw() * 180 / Math.PI);
-                    Console.WriteLine("Is loading? {0}                         \n", ginfo.IsLoading());
-
-                    Thread.Sleep(70);
-                }
-            }
+            overlay.EnableOverlay();
+            Application.Run(overlay);
         }
     }
 }
