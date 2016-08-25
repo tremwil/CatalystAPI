@@ -22,7 +22,8 @@ namespace Catalyst.Memory
         public static ProcessAccessFlags DefaultAccessFlags =
             ProcessAccessFlags.QueryInformation |
             ProcessAccessFlags.VmWrite |
-            ProcessAccessFlags.VmRead;
+            ProcessAccessFlags.VmRead |
+            ProcessAccessFlags.VmOperation;
 
         /// <summary>
         /// Gets the base address of a module in a specific process as a pointer.
@@ -85,9 +86,9 @@ namespace Catalyst.Memory
             var numWrite = IntPtr.Zero;
             WinAPI.WriteProcessMemory(hProcess, memaddress, bytes, nBytes, out numWrite);
 
-            // Unsuccessful read, we don't have access or the address is wrong
+            // Unsuccessful write, we don't have access or the address is wrong
             if (numWrite.ToInt32() != nBytes)
-                throw new UnauthorizedAccessException("Could not read memory");
+                throw new UnauthorizedAccessException("Could not write memory");
         }
 
         /// <summary>
