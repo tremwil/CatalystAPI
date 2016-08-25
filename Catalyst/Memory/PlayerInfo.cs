@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Catalyst.Mathf;
 
 namespace Catalyst.Memory
 {
@@ -12,31 +11,6 @@ namespace Catalyst.Memory
     /// </summary>
     public class PlayerInfo
     {
-        /// <summary>
-        /// A pointer to the cosine of the camera's yaw divided by two.
-        /// No idea why the game stores rotation like that.
-        /// <para></para>NOTE: the sign of the value is incorrect, so you
-        /// must also use sinYawOver2 to get the yaw.
-        /// </summary>
-        protected DeepPointer<float> cosYawOver2;
-        /// <summary>
-        /// A pointer to the sine of the camera's yaw divided by two.
-        /// No idea why the game stores rotation like that.
-        /// <para></para>NOTE: the sign of the value is incorrect, so you
-        /// must also use cosYawOver2 to get the yaw.
-        /// </summary>
-        protected DeepPointer<float> sinYawOver2;
-
-        /// <summary>
-        /// Faith's position. The coordinate system is right-handed.
-        /// </summary>
-        protected DeepPointer<Vec3> position;
-
-        /// <summary>
-        /// A value representing Faith's different movements.
-        /// </summary>
-        protected DeepPointer<MovementState> movement;
-
         /// <summary>
         /// The memory manager.
         /// </summary>
@@ -53,27 +27,6 @@ namespace Catalyst.Memory
             // him for it.
 
             MemManager = manager;
-
-            position = new DeepPointer<Vec3>(
-                MemManager.ProcHandle,
-                "MirrorsEdgeCatalyst.exe",
-                0x02578A68, 0x70, 0x98, 0x238, 0x20, 0x22d0
-            );
-            cosYawOver2 = new DeepPointer<float>(
-                MemManager.ProcHandle,
-                "MirrorsEdgeCatalyst.exe",
-                0x02578A68, 0x70, 0x98, 0x238, 0x20, 0x22cc
-            );
-            sinYawOver2 = new DeepPointer<float>(
-                MemManager.ProcHandle,
-                "MirrorsEdgeCatalyst.exe",
-                0x02578A68, 0x70, 0x98, 0x238, 0x20, 0x22c4
-            );
-            movement = new DeepPointer<MovementState>(
-                MemManager.ProcHandle,
-                "MirrorsEdgeCatalyst.exe",
-                0x2576FDC
-            );
         }
 
         /// <summary>
@@ -82,22 +35,99 @@ namespace Catalyst.Memory
         /// <returns></returns>
         public Vec3 GetPosition()
         {
-            return position.GetValue();
+            return MemManager.ReadGenericPtr<Vec3>(0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22d0);
+        }
+
+        /// <summary>
+        /// Set Faith's current position as a Vec3.
+        /// </summary>
+        /// <param name="newPos"></param>
+        public void SetPosition(Vec3 newPos)
+        {
+            MemManager.WriteGenericPtr(newPos, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22d0);
+            MemManager.WriteGenericPtr(newPos, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x20, 0x22d0);
         }
 
         /// <summary>
         /// Get the current orientation of the camera, as radians.
         /// </summary>
         /// <returns></returns>
-        public float GetYaw()
+        public float GetCameraYaw()
         {
-            var sin = sinYawOver2.GetValue();
-            var cos = cosYawOver2.GetValue();
+            var sin = MemManager.ReadGenericPtr<float>(0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22c4);
+            var cos = MemManager.ReadGenericPtr<float>(0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22cc);
+            var sinabs = Math.Abs(sin);
 
-            if (sin < 0 || cos < 0) // cos and sin have a random sign shift at cos = -0.5
-                return 2 * (float)(Math.PI - Math.Acos(cos));
+            if (sin < 0 || cos < 0) // cos and sin have a random sign shift at cos = -0.5, sin ~ 0.864
+                return Mathf.PI2 - 2 * (float)Math.Asin(sinabs);
 
-            return 2 * (float)Math.Acos(cos);
+            return 2 * (float)Math.Asin(sinabs);
+        }
+
+        /// <summary>
+        /// Sets the camera's yaw.
+        /// </summary>
+        /// <param name="angle">The new angle.</param>
+        public void SetCameraYaw(float angle)
+        {
+            // Set the angle to the range [0, 2PI)
+            angle = Mathf.DivMod(angle, Mathf.PI2);
+
+            float cos = (float)Math.Cos(angle * 0.5f);
+            float sin = (float)Math.Sin(angle * 0.5f);
+
+            if (angle > 4.1887902f) // 240 degrees
+            {
+                cos = -cos;
+                sin = -sin;
+            }
+
+            MemManager.WriteGenericPtr(sin, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22c4);
+            MemManager.WriteGenericPtr(sin, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x20, 0x22c4);
+            MemManager.WriteGenericPtr(cos, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22cc);
+            MemManager.WriteGenericPtr(cos, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x20, 0x22cc);
+        }
+
+        /// <summary>
+        /// Get the camera yaw as a unit vector. Faster than getting it as an angle.
+        /// </summary>
+        /// <returns></returns>
+        public Vec3 GetCameraYawVector()
+        {
+            var sin = MemManager.ReadGenericPtr<float>(0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22c4);
+            var cos = MemManager.ReadGenericPtr<float>(0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22cc);
+
+            if (sin < 0)
+            {
+                sin = -sin;
+                cos = -cos;
+            }
+
+            // Use double angle identities to multiply angle
+            return new Vec3(cos * cos - sin * sin, 2 * sin * cos);
+        }
+
+        /// <summary>
+        /// Set the camera yaw from a unit vector. Faster than using an angle.
+        /// </summary>
+        /// <param name="unitVector">The unit vector to convert.</param>
+        public void SetCameraYawVector(Vec3 unitVector)
+        {
+            // Use half-angle identities
+            float xover2 = unitVector.x * 0.5f;
+            float sin = (float)Math.Sqrt(0.5f - xover2);
+            float cos = (float)Math.Sqrt(0.5f + xover2);
+
+            if (unitVector.y < 0)
+            {
+                if (cos > 0.5f) sin = -sin;
+                else cos = -cos;
+            }
+
+            MemManager.WriteGenericPtr(sin, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22c4);
+            MemManager.WriteGenericPtr(sin, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x20, 0x22c4);
+            MemManager.WriteGenericPtr(cos, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x18, 0x22cc);
+            MemManager.WriteGenericPtr(cos, 0, 0x142578A68, 0x70, 0x98, 0x238, 0x20, 0x22cc);
         }
 
         /// <summary>
@@ -106,32 +136,7 @@ namespace Catalyst.Memory
         /// <returns></returns>
         public MovementState GetMovementState()
         {
-            return movement.GetValue();
-        }
-
-        private bool disposed = false;
-
-        /// <summary>
-        /// Free resources used by this object.
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !disposed)
-            {
-                position.Dispose();
-                sinYawOver2.Dispose();
-                cosYawOver2.Dispose();
-                disposed = true;
-            }
-        }
-
-        /// <summary>
-        /// Free resources used by this object.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            return MemManager.ReadGenericPtr<MovementState>(0, 0x142576fdc);
         }
     }
 }

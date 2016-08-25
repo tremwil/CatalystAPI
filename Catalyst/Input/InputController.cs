@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Catalyst.Settings;
-using SharpDX.DirectInput;
 using AutoIt;
 using System.Threading;
 
@@ -13,76 +12,19 @@ namespace Catalyst.Input
     /// <summary>
     /// A class to handle keyboard and mouse input.
     /// </summary>
-    public class InputController
+    public static class InputController
     {
-        #region kb/m hook
-
-        private static DirectInput inputHandler;
-        private static Keyboard keyboard;
-        private static Mouse mouse;
-
-        private static Thread UpdateThread;
-
-        private static object lockVal = new object();
-
-        private static KeyboardState kbstate;
-        private static MouseState mstate;
-
-        // 100 times per second
-        private static int HOOK_UPDATE_MS = 10;
-
-        #endregion
-
-        /// <summary>
-        /// A bool indicating the state of this controller.
-        /// </summary>
-        public static bool IsListening { get; private set; }
-
-        private static bool[] actionKeysState;
         private static InputBinding[] bindings;
 
-        // Initialize static stuff
-        static InputController()
+        private static int _ = Init();
+        static int Init()
         {
-            inputHandler = new DirectInput();
-            keyboard = new Keyboard(inputHandler); keyboard.Acquire();
-            mouse = new Mouse(inputHandler); mouse.Acquire();
-            kbstate = new KeyboardState();
-            mstate = new MouseState();
-            UpdateThread = new Thread(UpdateKBMState);
-
-            IsListening = false;
-
-            actionKeysState = new bool[GameActions.Amount];
-            ResetAKS();
-
             var sets = new Settings.Settings();
             sets.Load();
 
             bindings = sets.Controls.AsArray();
-        }
 
-        /// <summary>
-        /// Start the input hook.
-        /// </summary>
-        public static void HookStart()
-        {
-            if (!IsListening)
-            {
-                IsListening = true;
-
-                // A fast call to HookStop then HookStart will not start the thread twice
-                if (!UpdateThread.IsAlive)
-                    UpdateThread.Start();
-            }
-        }
-
-        /// <summary>
-        /// Stop the input hook.
-        /// </summary>
-        public static void HookStop()
-        {
-            IsListening = false;
+            return 0;
         }
 
         /// <summary>
@@ -135,6 +77,40 @@ namespace Catalyst.Input
         }
 
         /// <summary>
+        /// triggers a game action by pressing its key. 
+        /// </summary>
+        /// <param name="action"></param>
+        public static void PressAction(GameAction action)
+        {
+            var binding = bindings[(int)action];
+            if (binding.KeyBinding != DIKCode.DIK_NONE)
+                PressKey(binding.KeyBinding);
+            else
+                PressButton(binding.MouseBinding);
+        }
+
+        /// <summary>
+        /// Simulate a mouse click on the given button.
+        /// </summary>
+        /// <param name="code">The key code.</param>
+        public static void PressButton(MouseCode code)
+        {
+            PressButton(code, 20);
+        }
+
+        /// <summary>
+        /// Simulate a mouse click on the given button.
+        /// </summary>
+        /// <param name="code">The key code.</param>
+        /// <param name="pressTimeMS">The time the key will be pressed.</param>
+        public static void PressButton(MouseCode code, int pressTimeMS)
+        {
+            SetButtonState(code, true);
+            Thread.Sleep(pressTimeMS);
+            SetButtonState(code, false);
+        }
+
+        /// <summary>
         /// Simulate a keypress on the given key.
         /// </summary>
         /// <param name="code">The key code.</param>
@@ -153,66 +129,6 @@ namespace Catalyst.Input
             SetKeyState(code, true);
             Thread.Sleep(pressTimeMS);
             SetKeyState(code, false);
-        }
-
-        private static void ResetAKS()
-        {
-            for (int i = 0; i < GameActions.Amount; i++)
-            {
-                actionKeysState[i] = false;
-            }
-        }
-
-        /// <summary>
-        /// Get the state of a game action key.
-        /// </summary>
-        /// <param name="action">The action in question.</param>
-        /// <returns></returns>
-        public static bool GetActionKeyState(GameAction action)
-        {
-            return actionKeysState[(int)action];
-        }
-
-        private static void UpdateKBMState()
-        {
-            DIKCode key;
-            RawMouseCode mcode;
-
-            bool kbcond;
-            bool mousecond;
-
-            // allows us to stop the thread when needed
-            while (IsListening)
-            {
-                lock (lockVal)
-                {   // Locking allows us to modify static stuff from the thread
-                    keyboard.GetCurrentState(ref kbstate);
-                    mouse.GetCurrentState(ref mstate);
-
-                    for (int action = 0; action < actionKeysState.Length; action++)
-                    {
-                        key = bindings[action].KeyBinding;
-                        mcode = bindings[action].MouseBinding.ToRawCode();
-
-                        kbcond = (key == DIKCode.DIK_NONE) ? 
-                            false : kbstate.IsPressed((Key)key);
-
-                        // Here we use a little math trick.
-                        // first the equation 1 - 2x maps 1 to -1 and 0 to 1
-                        // then we multiply be the axis knowing that 
-                        // for a and b such that sgn(a) = sgn(b) a * b > 0.
-                        mousecond = (mcode.Axis == 24) ? 
-                            mstate.Buttons[mcode.Button] :
-                            mstate.Z * (1 - 2*mcode.Negate) > 0; 
-
-                        actionKeysState[action] = kbcond || mousecond;
-                    }
-                }
-                Thread.Sleep(HOOK_UPDATE_MS);
-            }
-
-            // Reset states once the hook stops
-            ResetAKS();
         }
     }
 }

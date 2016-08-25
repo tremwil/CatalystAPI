@@ -4,9 +4,9 @@ using System.ComponentModel;
 using System.Data;
 using System.Runtime.InteropServices;
 
-namespace Catalyst.Scripting
+namespace Catalyst.Display
 {
-    public class OverlayField
+    class OverlayField
     {
         public string FormatString { get; set; }
         public Func<object> Getter { get; set; }
@@ -17,7 +17,7 @@ namespace Catalyst.Scripting
             Getter = getter;
         }
 
-        public override string ToString()
+        public string ToString()
         {
             return string.Format(FormatString, Getter());
         }

@@ -7,15 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Catalyst.Unmanaged;
-using Catalyst.Memory;
-using System.IO;
 using System.Diagnostics;
 using System.Drawing.Text;
 
-namespace Catalyst.Scripting
+using Catalyst.Unmanaged;
+
+namespace Catalyst.Display
 {
-    public partial class OverlayForm : Form
+    partial class OverlayForm : Form
     {
         private RECT tgtWindowRect;
         private IntPtr TargetHandle;
@@ -23,15 +22,20 @@ namespace Catalyst.Scripting
 
         private Timer refreshTimer;
 
+        public bool autorizedToDraw;
+        private Rectangle[] invalidRegions;
+        private string[] formattedStrings;
+
         public int RefreshRateMS
         {
             get { return refreshTimer.Interval; }
             set { refreshTimer.Interval = value; }
         }
 
-        public bool IsDisplaying { get; private set; }
         public bool OverlayEnabled { get; private set; }
+
         public bool Attached { get; private set; }
+        public bool IsDisplaying => Attached;
 
         public int TextSpacing { get; set; }
         public Point TextOffset { get; set; }
@@ -54,7 +58,7 @@ namespace Catalyst.Scripting
             RefreshRateMS = 70;
             TargetProcName = "";
 
-            IsDisplaying = false;
+            autorizedToDraw = false;
             OverlayEnabled = false;
             Attached = false;
 
@@ -69,20 +73,35 @@ namespace Catalyst.Scripting
             TargetProcName = targetProcName;
         }
 
-        private void OverlayForm_Load(object sender, EventArgs e)
+        private void OverlayForm_Shown(object sender, EventArgs e)
         {
-            Hide();
+            // Here we must give the focus back to the previously focused window.
+            // This code iterates trough all the windows in z-axis order until it
+            // finds a visible one, then gives focus back to it. Fixes focus
+            // stealing when overlay is started while in game
+
+            IntPtr cwindow = Handle;
+            while (true)
+            {
+                cwindow = WinAPI.GetWindow(cwindow, 2);
+                if (cwindow == IntPtr.Zero) break;
+
+                if (WinAPI.IsWindowVisible(cwindow))
+                {
+                    WinAPI.SetForegroundWindow(cwindow);
+                    break;
+                }
+            }
         }
 
         public void EnableOverlay()
         {
             if (OverlayEnabled) return;
 
-            IsDisplaying = AttachToTarget();
             OverlayEnabled = true;
             refreshTimer.Start();
 
-            Show();
+            invalidRegions = new Rectangle[0];
         }
 
         public void DisableOverlay()
@@ -93,9 +112,7 @@ namespace Catalyst.Scripting
             OverlayEnabled = false;
             refreshTimer.Stop();
 
-            IsDisplaying = false;
             Invalidate();
-            Hide();
         }
 
         private bool AttachToTarget()
@@ -113,7 +130,10 @@ namespace Catalyst.Scripting
             }
 
             TargetHandle = processes[0].MainWindowHandle;
-            NativeMethods.SetWindowLongPtr(Handle, -8, TargetHandle);
+            WinAPI.SetWindowLongPtr(Handle, -8, TargetHandle);
+
+            // We are attached, so set our Z order to the target's one
+            WinAPI.SetWindowZOrder(Handle, TargetHandle, 0x210); // No owner Z order & no activate
 
             Attached = true;
             return true;
@@ -123,9 +143,17 @@ namespace Catalyst.Scripting
         {
             // Setting IntPtr.Zero as owner removes it
             TargetHandle = IntPtr.Zero;
-            NativeMethods.SetWindowLongPtr(Handle, -8, IntPtr.Zero);
+            WinAPI.SetWindowLongPtr(Handle, -8, IntPtr.Zero);
             Attached = false;
-        } 
+
+            InvalidateOld();
+        }
+
+        private void InvalidateOld()
+        {
+            foreach (var rgn in invalidRegions)
+                Invalidate(rgn);
+        }
 
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
@@ -133,15 +161,46 @@ namespace Catalyst.Scripting
 
             if (Attached)
             {
-                Invalidate();
+                // Invalidate previous regions to
+                InvalidateOld();
+
+                Graphics g = Graphics.FromHwnd(IntPtr.Zero);
+
+                int pX = tgtWindowRect.x2 - TextOffset.X;
+                int pY = tgtWindowRect.y2 - TextOffset.Y;
+
+                string text;
+                formattedStrings = new string[Overlays.Count];
+                invalidRegions = new Rectangle[Overlays.Count];
+
+                Point loc;
+                SizeF strSizeF;
+                Size strSize;
+
+                for (int i = Overlays.Count - 1; i > -1; i--)
+                {
+                    text = Overlays[i].ToString();
+                    formattedStrings[i] = text;
+
+                    strSizeF = g.MeasureString(text, TextFont);
+                    strSize = new Size((int)strSizeF.Width, (int)strSizeF.Height);
+
+                    pY -= strSize.Height;
+
+                    loc = new Point(pX - strSize.Width, pY);
+                    Rectangle invalidRgn = new Rectangle(loc, strSize);
+                    invalidRegions[i] = invalidRgn;
+                    Invalidate(invalidRgn, false);
+
+                    pY -= TextSpacing;
+                }
+
+                autorizedToDraw = true;
+                g.Dispose();
             }
             else
             {
-                var temp = IsDisplaying;
-                IsDisplaying = AttachToTarget();
-
-                if (temp == true)
-                    Invalidate();
+                AttachToTarget();
             }
         }
 
@@ -150,42 +209,13 @@ namespace Catalyst.Scripting
             if (TargetHandle == IntPtr.Zero)
                 return;
 
-            if (!NativeMethods.IsWindow(TargetHandle))
+            if (!WinAPI.IsWindow(TargetHandle))
             {
                 DetachFromTarget();
                 return;
             }
 
-            NativeMethods.GetWindowRect(TargetHandle, out tgtWindowRect);
-        }
-
-        private void OverlayForm_Paint(object sender, PaintEventArgs e)
-        {
-            Graphics g = e.Graphics;
-
-            // Remove AA problems
-            g.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit;
-
-            if (!IsDisplaying)
-                return;
-
-            var brush = new SolidBrush(TextColor);
-
-            float pX = tgtWindowRect.x2 - TextOffset.X;
-            float pY = tgtWindowRect.y2 - TextOffset.Y;
-
-            string text;
-            SizeF strSize;
-
-            for (int i = Overlays.Count - 1; i > -1; i--)
-            {
-                text = Overlays[i].ToString();
-                strSize = g.MeasureString(text, TextFont);
-
-                pY -= strSize.Height;
-                g.DrawString(text, TextFont, brush, pX - strSize.Width, pY);
-                pY -= TextSpacing;
-            }
+            WinAPI.GetWindowRect(TargetHandle, out tgtWindowRect);
         }
 
         private bool forceClose = false;
@@ -194,9 +224,54 @@ namespace Catalyst.Scripting
             if (!forceClose) e.Cancel = true;
         }
 
+        public new void Close()
+        {
+            forceClose = true;
+            base.Close();
+        }
+
+        private void OverlayForm_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+
+            if (!autorizedToDraw)
+                return;
+
+            // Remove AA problems
+            g.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit;
+
+            var brush = new SolidBrush(TextColor);
+            Point loc;
+            string text;
+
+            for (int i = 0; i < Overlays.Count; i++)
+            {
+                loc = invalidRegions[i].Location;
+                text = formattedStrings[i];
+
+                g.DrawString(text, TextFont, brush, loc);
+            }
+
+            brush.Dispose();
+            autorizedToDraw = false;
+        }
+
+        // Code to make the form completely invisible in alt-tab and similar menus
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var Params = base.CreateParams;
+                Params.ExStyle |= 0x80;
+                return Params;
+            }
+        }
+
         // Message procedure - remove mouse click activation
 
         private const int WM_MOUSEACTIVATE = 0x0021, MA_NOACTIVATE = 0x0003;
+
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == WM_MOUSEACTIVATE)

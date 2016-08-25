@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Catalyst.Scripting
 {
-    static class NativeMethods
+    static class WinAPI
     {
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -19,6 +19,10 @@ namespace Catalyst.Scripting
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool IsWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
     }
 
     [StructLayout(LayoutKind.Sequential)]

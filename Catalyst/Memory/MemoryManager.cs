@@ -57,7 +57,7 @@ namespace Catalyst.Memory
         /// <returns>If the read worked, return the bytes; otherwise null.</returns>
         public static byte[] ReadByteArray(IntPtr hProcess, long memaddress, int nBytes)
         {
-            // Create a 64bit buffer to hold the data
+            // Create a buffer to hold the data
             byte[] buffer = new byte[nBytes];
 
             // Read memory to the buffer and get the amount of read bytes
@@ -73,9 +73,27 @@ namespace Catalyst.Memory
         }
 
         /// <summary>
-        /// Reads a single byte from the specified address.
+        /// Writes a byte array of arbitrary length to the specified address.
         /// </summary>
         /// <param name="hProcess">The handle of the process to read from.</param>
+        /// <param name="memaddress">The memory address we start writing from.</param>
+        /// <param name="bytes">The number of bytes to read.</param>
+        public static void WriteByteArray(IntPtr hProcess, long memaddress, byte[] bytes)
+        {
+            var nBytes = bytes.Length;
+
+            var numWrite = IntPtr.Zero;
+            WinAPI.WriteProcessMemory(hProcess, memaddress, bytes, nBytes, out numWrite);
+
+            // Unsuccessful read, we don't have access or the address is wrong
+            if (numWrite.ToInt32() != nBytes)
+                throw new UnauthorizedAccessException("Could not read memory");
+        }
+
+        /// <summary>
+        /// Reads a single byte from the specified address.
+        /// </summary>
+        /// <param name="hProcess">The handle of the process to write from.</param>
         /// <param name="memaddress">The memory address we start reading from.</param>
         /// <returns>If the read worked, return the byte; otherwise null.</returns>
         public static byte ReadSingleByte(IntPtr hProcess, long memaddress)
@@ -84,12 +102,23 @@ namespace Catalyst.Memory
         }
 
         /// <summary>
+        /// Writes a single byte to the specified address.
+        /// </summary>
+        /// <param name="hProcess">The handle of the process to write from.</param>
+        /// <param name="memaddress">The memory address we start writing from.</param>
+        /// <param name="value">The byte to write.</param>
+        public static void WriteSingleByte(IntPtr hProcess, long memaddress, byte value)
+        {
+            WriteByteArray(hProcess, memaddress, new byte[1] { value });
+        }
+
+        /// <summary>
         /// Reads a 64-bit int from the specified address.
         /// </summary>
         /// <param name="hProcess">The handle of the process to read from.</param>
         /// <param name="memaddress">The memory address we start reading from.</param>
         /// <returns></returns>
-        public static long ReadInt64(IntPtr hProcess, long memaddress)
+        internal static long ReadInt64(IntPtr hProcess, long memaddress)
         {
             // Read the bytes using the other function
             byte[] bytes = ReadByteArray(hProcess, memaddress, 8);
@@ -206,19 +235,20 @@ namespace Catalyst.Memory
             if (HasExited) // Process is out, cannot read
                 throw new InvalidOperationException("Process has exited, cannot read");
 
-            // Create a 64bit buffer to hold the data
-            byte[] buffer = new byte[nBytes];
+            return ReadByteArray(ProcHandle, memaddress, nBytes);
+        }
 
-            // Read memory to the buffer and get the amount of read bytes
-            var numRead = IntPtr.Zero;
-            WinAPI.ReadProcessMemory(ProcHandle, memaddress, buffer, nBytes, out numRead);
+        /// <summary>
+        /// Writes a byte array of arbitrary length to the specified address.
+        /// </summary>
+        /// <param name="memaddress">The memory address we start writing from.</param>
+        /// <param name="bytes">The number of bytes to read.</param>
+        public void WriteByteArray(long memaddress, byte[] bytes)
+        {
+            if (HasExited) // Process is out, cannot read
+                throw new InvalidOperationException("Process has exited, cannot write");
 
-            // Unsuccessful read, we don't have access or the address is wrong
-            if (numRead.ToInt32() != nBytes)
-                throw new UnauthorizedAccessException("Could not read memory");
-
-            // Everything went okay, so return
-            return buffer;
+            WriteByteArray(ProcHandle, memaddress, bytes);
         }
 
         /// <summary>
@@ -228,7 +258,23 @@ namespace Catalyst.Memory
         /// <returns>If the read worked, return the byte; otherwise null.</returns>
         public byte ReadSingleByte(long memaddress)
         {
-            return ReadByteArray(ProcHandle, memaddress, 1)[0];
+            if (HasExited) // Process is out, cannot read
+                throw new InvalidOperationException("Process has exited, cannot write");
+
+            return ReadSingleByte(ProcHandle, memaddress);
+        }
+
+        /// <summary>
+        /// Writes a single byte to the specified address.
+        /// </summary>
+        /// <param name="memaddress">The memory address we start writing from.</param>
+        /// <param name="value">The byte to write.</param>
+        public void WriteSingleByte(long memaddress, byte value)
+        {
+            if (HasExited) // Process is out, cannot read
+                throw new InvalidOperationException("Process has exited, cannot write");
+
+            WriteSingleByte(ProcHandle, memaddress, value);
         }
 
         /// <summary>
@@ -236,11 +282,12 @@ namespace Catalyst.Memory
         /// </summary>
         /// <param name="memaddress">The memory address we start reading from.</param>
         /// <returns></returns>
-        public long ReadInt64(long memaddress)
+        internal long ReadInt64(long memaddress)
         {
-            // Read the long using the other function
-            byte[] bytes = ReadByteArray(ProcHandle, memaddress, 8);
-            return BitConverter.ToInt64(bytes, 0);
+            if (HasExited) // Process is out, cannot read
+                throw new InvalidOperationException("Process has exited, cannot write");
+
+            return ReadInt64(ProcHandle, memaddress);
         }
 
         /// <summary>
@@ -254,6 +301,19 @@ namespace Catalyst.Memory
             int size = GenericBitConverter.GetTypeSize(typeof(T));
             byte[] bytes = ReadByteArray(memaddress, size);
             return GenericBitConverter.ToStruct<T>(bytes);
+        }
+
+        /// <summary>
+        /// Write a generic value to a memory address.
+        /// </summary>
+        /// <typeparam name="T">The type to read.</typeparam>
+        /// <param name="memaddress">The memory address to write to.</param>
+        /// <param name="value">The generic value.</param>
+        /// <returns></returns>
+        public void WriteGeneric<T>(long memaddress, T value) where T : struct
+        {
+            byte[] bytes = GenericBitConverter.ToBytes(value);
+            WriteByteArray(memaddress, bytes);
         }
 
         /// <summary>
@@ -280,6 +340,34 @@ namespace Catalyst.Memory
         public T ReadGenericPtr<T>(string modulname, long staticAddress, params int[] offsets) where T : struct
         {
             return new DeepPointer<T>(ProcHandle, modulname, staticAddress, offsets).GetValue();
+        }
+
+        /// <summary>
+        /// Write a generic value to a pointer.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="moduleBaseAddress"></param>
+        /// <param name="staticAddress"></param>
+        /// <param name="offsets"></param>
+        /// <returns></returns>
+        public bool WriteGenericPtr<T>(T value, long moduleBaseAddress, long staticAddress, params int[] offsets) where T : struct
+        {
+            return new DeepPointer<T>(ProcHandle, moduleBaseAddress, staticAddress, offsets).SetValue(value);
+        }
+
+        /// <summary>
+        /// Write a generic value to a pointer.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="modulname"></param>
+        /// <param name="staticAddress"></param>
+        /// <param name="offsets"></param>
+        /// <returns></returns>
+        public bool WriteGenericPtr<T>(T value, string modulname, long staticAddress, params int[] offsets) where T : struct
+        {
+            return new DeepPointer<T>(ProcHandle, modulname, staticAddress, offsets).SetValue(value);
         }
 
         private bool disposed = false;

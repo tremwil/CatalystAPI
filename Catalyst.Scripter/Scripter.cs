@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IronPython.Hosting;
+using IronPython.Runtime;
 using Microsoft.Scripting.Hosting;
 using System.Runtime.Remoting;
 using Catalyst;
 using System.Drawing;
 using System.Reflection;
+using System.Timers;
 using Debug = System.Console;
 
 namespace Catalyst.Scripting
@@ -16,17 +18,38 @@ namespace Catalyst.Scripting
     public class Scripter
     {
         private ScriptEngine engine;
-        private ScriptScope scope;
+        public ScriptScope scope;
         private OverlayWrapper wrapper;
 
-        private Memory.MemoryManager Mem;
+        private Memory.MemoryManager mem;
+
+        private GameInfoWrapper gameInfo;
+        private PlayerInfoWrapper playerInfo;
+
+        private Timer infoRefreshTimer;
         
         public Scripter()
         {
             engine = Python.CreateEngine();
-            Mem = new Memory.MemoryManager();
+            mem = new Memory.MemoryManager();
 
-            wrapper = new OverlayWrapper();
+            wrapper = new OverlayWrapper(this);
+
+            gameInfo = new GameInfoWrapper(mem);
+            playerInfo = new PlayerInfoWrapper(mem);
+
+            infoRefreshTimer = new Timer(70);
+            infoRefreshTimer.Elapsed += InfoRefreshTimer_Elapsed;
+        }
+
+        private void InfoRefreshTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            gameInfo.IsLoading.Update(gameInfo.ginfo.IsLoading());
+            playerInfo.MovementState.Update(playerInfo.pinfo.GetMovementState());
+            playerInfo.Position.Update(playerInfo.pinfo.GetPosition());
+            playerInfo.Yaw.Update(playerInfo.pinfo.GetCameraYaw());
+
+            playerInfo.Velocity.Update((playerInfo.Position.Current - playerInfo.Position.Old) * 14.2857f);
         }
 
         private void CreateScope()
@@ -47,15 +70,23 @@ namespace Catalyst.Scripting
             engine.Execute("from Catalyst.Mathf import *", scope);
             engine.Execute("from Catalyst.Memory import *", scope);
             engine.Execute("from Catalyst.Settings import *", scope);
+            engine.Execute("import Catalyst.Input.InputController as Input", scope);
+            engine.Execute("import System.Console as Debug", scope);
 
-            Mem.OpenProcess("MirrorsEdgeCatalyst");
-            scope.SetVariable("Memory", Mem);
-
-            scope.SetVariable("Input", new Input.InputController());
+            scope.SetVariable("Memory", mem);
             scope.SetVariable("Settings", new Settings.Settings());
             scope.SetVariable("Overlay", wrapper);
-            scope.SetVariable("Game", new Memory.GameInfo(Mem));
-            scope.SetVariable("Player", new Memory.PlayerInfo(Mem));
+            scope.SetVariable("Game", gameInfo);
+            scope.SetVariable("Player", playerInfo);
+        }
+
+        private void Load(string file)
+        {
+            CreateScope();
+
+            var code = engine.CreateScriptSourceFromFile(file);
+            var compiled = code.Compile();
+            compiled.Execute(scope);
         }
     }
 }

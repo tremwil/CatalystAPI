@@ -1,4 +1,4 @@
-﻿namespace Catalyst.Scripting
+﻿namespace Catalyst.Display
 {
     partial class OverlayForm
     {
@@ -36,14 +36,13 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(284, 261);
-            this.DoubleBuffered = true;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "OverlayForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "OverlayForm";
             this.TransparencyKey = System.Drawing.Color.Black;
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OverlayForm_FormClosing);
-            this.Load += new System.EventHandler(this.OverlayForm_Load);
+            this.Shown += new System.EventHandler(this.OverlayForm_Shown);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.OverlayForm_Paint);
             this.ResumeLayout(false);
 

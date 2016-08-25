@@ -17,7 +17,7 @@ namespace Catalyst.Scripting
             Current = default(T);    
         }
 
-        internal void Update(T newValue)
+        public void Update(T newValue)
         {
             Old = Current;
             Current = newValue;

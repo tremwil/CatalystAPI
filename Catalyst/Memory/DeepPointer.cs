@@ -144,6 +144,21 @@ namespace Catalyst.Memory
             return MemoryManager.ReadByteArray(ProcHandle, dyn, count);
         }
 
+        /// <summary>
+        /// Set the bytes this object points to, if possible.
+        /// </summary>
+        /// <param name="data">The bytes to write.</param>
+        /// <returns>A bool indicating the success of this operation</returns>
+        public bool SetBytes(byte[] data)
+        {
+            long dyn = GetDynamicAddress();
+            if (dyn == 0) return false; // Pointer has been resetted
+
+            // Write to the memory at the dynamic address
+            MemoryManager.WriteByteArray(ProcHandle, dyn, data);
+            return true;
+        }
+
         private bool disposed = true;
 
         /// <summary>
@@ -246,6 +261,17 @@ namespace Catalyst.Memory
             if (bytes == null) return default(T);
 
             return GenericBitConverter.ToStruct<T>(bytes);
+        }
+
+        /// <summary>
+        /// Write the value this object points to, if possible.
+        /// </summary>
+        /// <param name="value">The value to write.</param>
+        /// <returns>A bool indicating the success of this operation</returns>
+        public bool SetValue(T value)
+        {
+            byte[] bytes = GenericBitConverter.ToBytes(value);
+            return SetBytes(bytes);
         }
     }
 

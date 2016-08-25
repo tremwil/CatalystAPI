@@ -35,16 +35,33 @@ namespace Catalyst.Memory
         /// </summary>
         /// <typeparam name="T">The struct to convert to.</typeparam>
         /// <param name="data">The data to convert.</param>
-        /// <param name="safe">If true, the method will throw an error if T's size does not match the data.</param>
+        /// <param name="safe">If true, the method will throw an error if type's size does not match the data.</param>
         /// <returns></returns>
         public static T ToStruct<T>(byte[] data, bool safe) where T : struct
         {
+            Type t = typeof(T);
+            if (t.IsEnum)
+            {
+                t = Enum.GetUnderlyingType(t);
+            }
+
             if (safe)
-                if (GetTypeSize(typeof(T)) != data.Length)
-                    throw new ArgumentException("Not enough data to convert", "data");
+                if (Marshal.SizeOf(t) != data.Length)
+                    throw new ArgumentException("Data does not match type size", "data");
 
             var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-            return (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            T obj;
+
+            try
+            {
+                obj = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), t);
+            }
+            finally
+            {
+                handle.Free();
+            }
+
+            return obj;
         }
 
         /// <summary>
@@ -55,8 +72,40 @@ namespace Catalyst.Memory
         /// <returns></returns>
         public static T ToStruct<T>(byte[] data) where T : struct
         {
-            var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-            return (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            return ToStruct<T>(data, false);
+        }
+
+        /// <summary>
+        /// Convert a value-type to bytes.
+        /// </summary>
+        /// <typeparam name="T">The struct to convert from.</typeparam>
+        /// <param name="value">The value to convert to bytes.</param>
+        /// <returns></returns>
+        public static byte[] ToBytes<T>(T value) where T : struct
+        {
+            object fixedValue = value;
+            Type t = typeof(T);
+
+            if (t.IsEnum)
+            {
+                t = Enum.GetUnderlyingType(t);
+                fixedValue = Convert.ChangeType(fixedValue, t);
+            }
+
+            byte[] buffer = new byte[Marshal.SizeOf(t)];
+            IntPtr handle = Marshal.AllocHGlobal(buffer.Length);
+
+            try
+            {
+                Marshal.StructureToPtr(fixedValue, handle, false);
+                Marshal.Copy(handle, buffer, 0, buffer.Length);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(handle);
+            }
+
+            return buffer;
         }
     }
 }

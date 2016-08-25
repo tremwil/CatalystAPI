@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace Catalyst.Mathf
+namespace Catalyst
 {
     /// <summary>
     /// A vector in 3-dimensional space with XYZ components.
@@ -81,6 +81,18 @@ namespace Catalyst.Mathf
             x = other.x;
             y = other.y;
             z = other.z;
+        }
+
+        /// <summary>
+        /// Construct a unit-vector from euler angles.
+        /// </summary>
+        /// <param name="pitch">The pitch (in radians) from pi/2 to -pi/2</param>
+        /// <param name="yaw">The yaw (in radians) counterclocwise from the X axis.</param>
+        public Vec3(float pitch, float yaw)
+        {
+            x = (float)( Math.Cos(yaw) * Math.Cos(pitch) );
+            y = (float)( Math.Sin(pitch) );
+            z = (float)( Math.Sin(yaw) * Math.Cos(pitch) );
         }
 
         /// <summary>

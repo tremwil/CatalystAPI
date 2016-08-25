@@ -48,17 +48,10 @@
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SharpDX, Version=3.0.2.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.3.0.2\lib\net45\SharpDX.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="SharpDX.DirectInput, Version=3.0.2.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.DirectInput.3.0.2\lib\net45\SharpDX.DirectInput.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -66,8 +59,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Display\OverlayField.cs" />
+    <Compile Include="Display\OverlayForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Display\OverlayForm.Designer.cs">
+      <DependentUpon>OverlayForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Display\Overlay.cs" />
     <Compile Include="Input\GameAction.cs" />
     <Compile Include="Input\InputController.cs" />
+    <Compile Include="Mathf.cs" />
     <Compile Include="Memory\MovementState.cs" />
     <Compile Include="Memory\PlayerInfo.cs" />
     <Compile Include="Memory\ProcessAccess.cs" />
@@ -75,7 +77,7 @@
     <Compile Include="Input\InputBinding.cs" />
     <Compile Include="Input\MouseCode.cs" />
     <Compile Include="Memory\MemoryManager.cs" />
-    <Compile Include="Mathf\Vec3.cs" />
+    <Compile Include="Vec3.cs" />
     <Compile Include="Memory\DeepPointer.cs" />
     <Compile Include="Memory\GameInfo.cs" />
     <Compile Include="Settings\AudioSettings.cs" />
@@ -95,6 +97,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Display\OverlayForm.resx">
+      <DependentUpon>OverlayForm.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /y /q "$(ProjectDir)dll" "$(TargetDir)"</PostBuildEvent>

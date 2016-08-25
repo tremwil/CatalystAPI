@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Catalyst.Mathf;
 using System.Diagnostics;
 
 namespace Catalyst.Memory
@@ -11,13 +10,8 @@ namespace Catalyst.Memory
     /// <summary>
     /// A few useful values collected from game memory.
     /// </summary>
-    public class GameInfo : IDisposable
+    public class GameInfo
     {
-        /// <summary>
-        /// A value to test if the game is loading.
-        /// </summary>
-        protected DeepPointer<byte> isLoading;
-
         /// <summary>
         /// The memory manager.
         /// </summary>
@@ -34,12 +28,6 @@ namespace Catalyst.Memory
             // him for it.
 
             MemManager = manager;
-
-            isLoading = new DeepPointer<byte>(
-                MemManager.ProcHandle,
-                "MirrorsEdgeCatalyst.exe",
-                0x240C2B8, 0x4C1
-            );
         }
 
         /// <summary>
@@ -48,30 +36,50 @@ namespace Catalyst.Memory
         /// <returns></returns>
         public bool IsLoading()
         {
-            return Convert.ToBoolean(isLoading.GetValue());
-        }
-
-        private bool disposed = false;
-
-        /// <summary>
-        /// Free resources used by this object.
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !disposed)
-            {
-                isLoading.Dispose();
-                disposed = true;
-            }
+            byte val = MemManager.ReadGenericPtr<byte>(0, 0x14240c2b8, 0x4c1);
+            return Convert.ToBoolean(val);
         }
 
         /// <summary>
-        /// Free resources used by this object.
+        /// Get the current timescale (game speed).
         /// </summary>
-        public void Dispose()
+        /// <returns></returns>
+        public float GetTimescale()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            return MemManager.ReadGenericPtr<float>(0, 0x142142A68, 0x48);
+        }
+
+        /// <summary>
+        /// Set the current time scale (game speed). Beware of extreme values.
+        /// </summary>
+        /// <param name="newValue">The new timescale.</param>
+        public void SetTimescale(float newValue)
+        {
+            if (newValue < 0)
+                throw new ArgumentException("value must be bigger or equal to 0", "newValue");
+
+            MemManager.WriteGenericPtr(newValue, 0, 0x142142A68, 0x48);
+        }
+
+        /// <summary>
+        /// Get the current time of day, in seconds.
+        /// </summary>
+        /// <returns></returns>
+        public int GetTimeOfDay()
+        {
+            return MemManager.ReadGenericPtr<int>(0, 0x14255C2F8, 0x8, 0x28, 0x30);
+        }
+
+        /// <summary>
+        /// Set the current time of day.
+        /// </summary>
+        /// <param name="newValue">The day time, in seconds.</param>
+        public void SetTimeOfDay(int newValue)
+        {
+            if (newValue < 0 || newValue > 86400)
+                throw new ArgumentException("Value must be in range [0, 86400]", "newValue");
+
+            MemManager.WriteGenericPtr(newValue, 0, 0x14255C2F8, 0x8, 0x28, 0x30);
         }
     }
 }
