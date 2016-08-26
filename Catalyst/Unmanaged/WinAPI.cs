@@ -61,23 +61,23 @@ namespace Catalyst.Unmanaged
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelInputProc lpfn, IntPtr hMod, uint dwThreadId);
+        public static extern IntPtr SetWindowsHookEx(int idHook, LowLevelInputProc lpfn, IntPtr hMod, uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+        public static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+        public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr GetModuleHandle(string lpModuleName);
+        public static extern IntPtr GetModuleHandle(string lpModuleName);
     }
 
     public delegate IntPtr LowLevelInputProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct KBDLLHOOKSTRUCT
+    public struct KBINFO // Native name is KBDLLHOOKSTRUCT
     {
         public uint vkCode;
         public uint scanCode;
@@ -87,7 +87,7 @@ namespace Catalyst.Unmanaged
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct MSDLLHOOKSTRUCT
+    public struct MSINFO // Native name is MSLLHOOKSTRUCT
     {
         public int x;
         public int y;

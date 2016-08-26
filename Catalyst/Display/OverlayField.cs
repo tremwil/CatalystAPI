@@ -17,7 +17,7 @@ namespace Catalyst.Display
             Getter = getter;
         }
 
-        public string ToString()
+        public string GetString()
         {
             return string.Format(FormatString, Getter());
         }

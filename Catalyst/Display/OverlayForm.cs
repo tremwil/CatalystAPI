@@ -179,7 +179,7 @@ namespace Catalyst.Display
 
                 for (int i = Overlays.Count - 1; i > -1; i--)
                 {
-                    text = Overlays[i].ToString();
+                    text = Overlays[i].GetString();
                     formattedStrings[i] = text;
 
                     strSizeF = g.MeasureString(text, TextFont);

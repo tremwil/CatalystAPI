@@ -8,6 +8,45 @@ using System.Runtime.InteropServices;
 namespace Catalyst.Input
 {
     /// <summary>
+    /// The mouse buttons that can be detected and sent by the InputController.
+    /// </summary>
+    public enum MouseButton
+    {
+        /// <summary>
+        /// Represents no button.
+        /// </summary>
+        None,
+        /// <summary>
+        /// The left mouse button.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// The right mouse button.
+        /// </summary>
+        Right,
+        /// <summary>
+        /// The middle mouse button.
+        /// </summary>
+        Middle,
+        /// <summary>
+        /// The X1 mouse button.
+        /// </summary>
+        X1,
+        /// <summary>
+        /// The X2 mouse button.
+        /// </summary>
+        X2,
+        /// <summary>
+        /// The action of moving the mousewheel upwards.
+        /// </summary>
+        WheelUp,
+        /// <summary>
+        /// The action of moving the mousewheel downwards.
+        /// </summary>
+        WheelDown,
+    }
+
+    /// <summary>
     /// The game-supported mouse buttons.
     /// </summary>
     public enum MouseCode
@@ -40,11 +79,11 @@ namespace Catalyst.Input
         /// <summary>
         /// The mousewheel upwards scrolling.
         /// </summary>
-        MousewheelUp = 0x0D10,
+        WheelUp = 0x0D10,
         /// <summary>
         /// The mousewheel downwards scrolling.
         /// </summary>
-        MousewheelDown = 0x0D11,
+        WheelDown = 0x0D11,
     }
 
     /// <summary>
@@ -69,6 +108,16 @@ namespace Catalyst.Input
         public static RawMouseCode ToRawCode(this MouseCode code)
         {
             return new RawMouseCode(code);
+        }
+
+        /// <summary>
+        /// Convert this code to a mouse button.
+        /// </summary>
+        /// <param name="code">The code.</param>
+        /// <returns></returns>
+        public static MouseButton ToMouseButton(this MouseCode code)
+        {
+            return (MouseButton)Enum.Parse(typeof(MouseButton), code.ToString());
         }
     }
 

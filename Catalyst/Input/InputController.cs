@@ -4,8 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Catalyst.Settings;
-using AutoIt;
+using AutoHotkey.Interop;
 using System.Threading;
+using System.Diagnostics;
+using Catalyst.Unmanaged;
+using System.Runtime.InteropServices;
 
 namespace Catalyst.Input
 {
@@ -15,10 +18,14 @@ namespace Catalyst.Input
     public static class InputController
     {
         private static InputBinding[] bindings;
+        private static AutoHotkeyEngine ahk;
 
+        // Disgusting, but better than static constructor
         private static int _ = Init();
         static int Init()
         {
+            ahk = new AutoHotkeyEngine();
+
             var sets = new Settings.Settings();
             sets.Load();
 
@@ -34,8 +41,25 @@ namespace Catalyst.Input
         /// <param name="pressed"></param>
         public static void SetKeyState(DIKCode code, bool pressed)
         {
-            var str = "{" + code.ToAutoItString() + (pressed? " down}" : " up}");
-            AutoItX.Send(str);
+            string scode = ((int)code).ToString("x3");
+            string state = pressed ? " up" : " down";
+
+            ahk.ExecRaw("Send {sc" + scode + state + "}");
+        }
+
+        /// <summary>
+        /// Set the state of the given mouse button.
+        /// <para></para>NOTE : Mousewheel up/down is only pressed, not held.
+        /// </summary>
+        /// <param name="btn"></param>
+        /// <param name="pressed"></param>
+        public static void SetButtonState(MouseButton btn, bool pressed)
+        {
+            string scode = btn.ToString();
+            string state = pressed ? "D" : "U";
+            string cmd = "MouseClick, {0}, , , 1, , {1}";
+
+            ahk.ExecRaw(string.Format(cmd, scode, state));
         }
 
         /// <summary>
@@ -46,19 +70,7 @@ namespace Catalyst.Input
         /// <param name="pressed"></param>
         public static void SetButtonState(MouseCode code, bool pressed)
         {
-            var raw = code.ToRawCode();
-
-            if (raw.Axis == 24)
-            {
-                string[] names = new string[3] { "LEFT", "RIGHT", "MIDDLE" };
-                if (pressed) AutoItX.MouseDown(names[raw.Button]);
-                else AutoItX.MouseUp(names[raw.Button]);
-            }
-            else
-            {
-                string dir = (raw.Negate == 0) ? "up" : "down";
-                AutoItX.MouseWheel(dir, 10);
-            }
+            SetButtonState(code.ToMouseButton(), pressed);
         }
 
         /// <summary>
@@ -70,9 +82,11 @@ namespace Catalyst.Input
         public static void SetGameActionState(GameAction action, bool pressed)
         {
             var binding = bindings[(int)action];
+
             if (binding.KeyBinding != DIKCode.DIK_NONE)
                 SetKeyState(binding.KeyBinding, pressed);
-            else
+
+            else if (binding.MouseBinding != MouseCode.None)
                 SetButtonState(binding.MouseBinding, pressed);
         }
 
@@ -129,6 +143,99 @@ namespace Catalyst.Input
             SetKeyState(code, true);
             Thread.Sleep(pressTimeMS);
             SetKeyState(code, false);
+        }
+
+        // Keyboard / mouse hooks
+
+        private const int WM_KEYDOWN = 0x100;
+        private const int WM_KEYUP = 0x101;
+
+        private const int WM_LBUTTONDOWN = 0x201;
+        private const int WM_LBUTTONUP = 0x202;
+
+        private const int WM_RBUTTONDOWN = 0x204;
+        private const int WM_RBUTTONUP = 0x205;
+
+        private const int WM_MBUTTONDOWN = 0x207;
+        private const int WM_MBUTTONUP = 0x208;
+
+        private const int WM_MOUSEWHEEL = 0x20A;
+        private const int WHEEL_DELTA = 120;
+
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WH_MOUSE_LL = 14;
+
+        private static IntPtr hookKB = IntPtr.Zero;
+        private static IntPtr hookMS = IntPtr.Zero;
+        private static bool hookEnabled = false;
+
+        private static Type KBINFO_TYPE = typeof(KBINFO);
+        private static Type MSINFO_TYPE = typeof(MSINFO);
+
+        private static List<DIKCode> pressedKeys;
+        private static List<MouseButton> pressedBtns;
+
+        private static void SetLLHook()
+        {
+            if (hookEnabled) return;
+
+            pressedKeys = new List<DIKCode>();
+            pressedBtns = new List<MouseButton>();
+
+            string mname = Process.GetCurrentProcess().MainModule.ModuleName;
+            IntPtr hModule = WinAPI.GetModuleHandle(mname);
+
+            hookKB = WinAPI.SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hModule, 0);
+            hookMS = WinAPI.SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, hModule, 0);
+
+            if (hookKB == IntPtr.Zero || hookMS == IntPtr.Zero)
+                throw new InvalidOperationException("Could not set global hook");
+
+            hookEnabled = true;
+        }
+
+        private static void UnsetLLHook()
+        {
+            if (!hookEnabled) return;
+
+            WinAPI.UnhookWindowsHookEx(hookKB);
+            WinAPI.UnhookWindowsHookEx(hookMS);
+
+            hookEnabled = false;
+        }
+
+        private static IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            int message = wParam.ToInt32();
+
+            if (nCode >= 0)
+            {
+                int scancode = Marshal.ReadInt32(lParam, 4);
+
+                DIKCode dik;
+                bool sucess = DIKCodes.TryParse(scancode, out dik);
+
+                if (sucess && message == WM_KEYDOWN)
+                    pressedKeys.Add(dik);
+
+                if (sucess && message == WM_KEYUP)
+                    pressedKeys.Remove(dik);
+            }
+
+            return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
+        }
+
+        private static IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            int message = wParam.ToInt32();
+
+            if (nCode >= 0)
+            {
+
+                //switch (message)
+            }
+
+            return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
         }
     }
 }
