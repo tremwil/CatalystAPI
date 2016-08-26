@@ -44,7 +44,14 @@ namespace Catalyst.Settings
         public void Load()
         {
             rawSettings.RemoveAll(); // Clear the settings first
-            rawSettings = JsonPathList.FromFile(SettingsPath);
+            try
+            {
+                rawSettings = JsonPathList.FromFile(SettingsPath);
+            }
+            catch (Exception)
+            {
+                throw new Exception("Could not load the settings file");
+            }
         }
 
         /// <summary>

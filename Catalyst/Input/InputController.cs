@@ -17,22 +17,64 @@ namespace Catalyst.Input
     /// </summary>
     public static class InputController
     {
+        #region sending related fields
+
         private static InputBinding[] bindings;
         private static AutoHotkeyEngine ahk;
 
-        // Disgusting, but better than static constructor
-        private static int _ = Init();
-        static int Init()
+        #endregion
+
+        #region hook related fields
+
+        private const int WM_KEYDOWN = 0x100;
+        private const int WM_KEYUP = 0x101;
+
+        private const int WM_MOUSEMOVE = 0x200;
+        private static int MOUSE_X = 0;
+        private static int MOUSE_Y = 0; 
+
+        private const int WM_LBUTTONDOWN = 0x201;
+        private const int WM_LBUTTONUP = 0x202;
+
+        private const int WM_RBUTTONDOWN = 0x204;
+        private const int WM_RBUTTONUP = 0x205;
+
+        private const int WM_MBUTTONDOWN = 0x207;
+        private const int WM_MBUTTONUP = 0x208;
+
+        private const int WM_XBUTTONDOWN = 0x20B;
+        private const int WM_XBUTTONUP = 0x20C;
+
+        private const int WM_MOUSEWHEEL = 0x20A;
+        private const int MW_TIME_MS = 40;
+        private static uint MW_TICK = 0;
+
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WH_MOUSE_LL = 14;
+
+        private static IntPtr hookKB = IntPtr.Zero;
+        private static IntPtr hookMS = IntPtr.Zero;
+        private static bool hookEnabled = false;
+
+        private static int wheelState = 0;
+        private static List<DIKCode> pressedKeys;
+        private static List<MouseButton> pressedBtns;
+
+        #endregion
+
+        #region static constructor
+
+        static InputController()
         {
             ahk = new AutoHotkeyEngine();
 
             var sets = new Settings.Settings();
-            sets.Load();
-
             bindings = sets.Controls.AsArray();
-
-            return 0;
         }
+
+        #endregion
+
+        #region key sending funcs
 
         /// <summary>
         /// Set the state of the given key code.
@@ -106,7 +148,7 @@ namespace Catalyst.Input
         /// <summary>
         /// Simulate a mouse click on the given button.
         /// </summary>
-        /// <param name="code">The key code.</param>
+        /// <param name="code">The mouse code.</param>
         public static void PressButton(MouseCode code)
         {
             PressButton(code, 20);
@@ -115,9 +157,30 @@ namespace Catalyst.Input
         /// <summary>
         /// Simulate a mouse click on the given button.
         /// </summary>
-        /// <param name="code">The key code.</param>
+        /// <param name="code">The mouse button.</param>
+        public static void PressButton(MouseButton code)
+        {
+            PressButton(code, 20);
+        }
+
+        /// <summary>
+        /// Simulate a mouse click on the given button.
+        /// </summary>
+        /// <param name="code">The mouse code.</param>
         /// <param name="pressTimeMS">The time the key will be pressed.</param>
         public static void PressButton(MouseCode code, int pressTimeMS)
+        {
+            SetButtonState(code, true);
+            Thread.Sleep(pressTimeMS);
+            SetButtonState(code, false);
+        }
+
+        /// <summary>
+        /// Simulate a mouse click on the given button.
+        /// </summary>
+        /// <param name="code">The mouse button.</param>
+        /// <param name="pressTimeMS">The time the key will be pressed.</param>
+        public static void PressButton(MouseButton code, int pressTimeMS)
         {
             SetButtonState(code, true);
             Thread.Sleep(pressTimeMS);
@@ -145,37 +208,14 @@ namespace Catalyst.Input
             SetKeyState(code, false);
         }
 
-        // Keyboard / mouse hooks
+        #endregion
 
-        private const int WM_KEYDOWN = 0x100;
-        private const int WM_KEYUP = 0x101;
+        #region input hook functions
 
-        private const int WM_LBUTTONDOWN = 0x201;
-        private const int WM_LBUTTONUP = 0x202;
-
-        private const int WM_RBUTTONDOWN = 0x204;
-        private const int WM_RBUTTONUP = 0x205;
-
-        private const int WM_MBUTTONDOWN = 0x207;
-        private const int WM_MBUTTONUP = 0x208;
-
-        private const int WM_MOUSEWHEEL = 0x20A;
-        private const int WHEEL_DELTA = 120;
-
-        private const int WH_KEYBOARD_LL = 13;
-        private const int WH_MOUSE_LL = 14;
-
-        private static IntPtr hookKB = IntPtr.Zero;
-        private static IntPtr hookMS = IntPtr.Zero;
-        private static bool hookEnabled = false;
-
-        private static Type KBINFO_TYPE = typeof(KBINFO);
-        private static Type MSINFO_TYPE = typeof(MSINFO);
-
-        private static List<DIKCode> pressedKeys;
-        private static List<MouseButton> pressedBtns;
-
-        private static void SetLLHook()
+        /// <summary>
+        /// Enable the global input hook.
+        /// </summary>
+        public static void EnableInputHook()
         {
             if (hookEnabled) return;
 
@@ -194,7 +234,10 @@ namespace Catalyst.Input
             hookEnabled = true;
         }
 
-        private static void UnsetLLHook()
+        /// <summary>
+        /// Disable the global input hooks.
+        /// </summary>
+        public static void DisableInputHook()
         {
             if (!hookEnabled) return;
 
@@ -203,6 +246,81 @@ namespace Catalyst.Input
 
             hookEnabled = false;
         }
+
+        /// <summary>
+        /// Gets all the currently pressed keys.
+        /// </summary>
+        /// <returns></returns>
+        public static DIKCode[] GetPressedKeys()
+        {
+            return pressedKeys.ToArray();
+        }
+
+        /// <summary>
+        /// Gets the currently pressed mouse buttons.
+        /// </summary>
+        /// <returns></returns>
+        public static MouseButton[] GetPressedButtons()
+        {
+            uint tickcount = unchecked((uint)Environment.TickCount);
+
+            if ((tickcount - MW_TICK) < MW_TIME_MS && wheelState != 0)
+                return pressedBtns.Concat(
+                    new MouseButton[1] { (MouseButton)wheelState }).ToArray();
+
+            return pressedBtns.ToArray();
+        }
+
+        /// <summary>
+        /// Test if the given key is pressed.
+        /// </summary>
+        /// <param name="keyCode">The key code.</param>
+        /// <returns></returns>
+        public static bool IsKeyPressed(DIKCode keyCode)
+        {
+            return pressedKeys.Contains(keyCode);
+        }
+
+        /// <summary>
+        /// Test if the given mouse button is pressed.
+        /// </summary>
+        /// <param name="btn">The mouse button.</param>
+        /// <returns></returns>
+        public static bool IsButtonPressed(MouseButton btn)
+        {
+            if (btn == MouseButton.WheelDown || btn == MouseButton.WheelUp)
+            {
+                uint tickcount = unchecked((uint)Environment.TickCount);
+                return wheelState == (int)btn && (tickcount - MW_TICK) < MW_TIME_MS;
+            }
+
+            return pressedBtns.Contains(btn);
+        }
+
+        /// <summary>
+        /// Test if the given mouse code is pressed.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        public static bool IsButtonPressed(MouseCode code)
+        {
+            return IsButtonPressed(code.ToMouseButton());
+        }
+
+        /// <summary>
+        /// Test if the given game action is pressed.
+        /// </summary>
+        /// <param name="action">The action to test for.</param>
+        /// <returns></returns>
+        public static bool IsGameActionPressed(GameAction action)
+        {
+            var binding = bindings[(int)action];
+            return IsKeyPressed(binding.KeyBinding) || IsButtonPressed(binding.MouseBinding);
+        }
+
+        #endregion
+
+        #region input hook procedures
 
         private static IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam)
         {
@@ -231,11 +349,56 @@ namespace Catalyst.Input
 
             if (nCode >= 0)
             {
+                MSINFO mInfo = Marshal.PtrToStructure<MSINFO>(lParam);
+                MouseButton but;
 
-                //switch (message)
+                switch (message)
+                {
+                    case WM_LBUTTONDOWN:
+                        pressedBtns.Add(MouseButton.Left);
+                        break;
+                    case WM_LBUTTONUP:
+                        pressedBtns.Remove(MouseButton.Left);
+                        break;
+
+                    case WM_RBUTTONDOWN:
+                        pressedBtns.Add(MouseButton.Right);
+                        break;
+                    case WM_RBUTTONUP:
+                        pressedBtns.Remove(MouseButton.Right);
+                        break;
+
+                    case WM_MBUTTONDOWN:
+                        pressedBtns.Add(MouseButton.Middle);
+                        break;
+                    case WM_MBUTTONUP:
+                        pressedBtns.Remove(MouseButton.Middle);
+                        break;
+
+                    case WM_XBUTTONDOWN:
+                        but = (mInfo.mouseData >> 16 == 1) ? MouseButton.X1 : MouseButton.X2;
+                        pressedBtns.Add(but);
+                        break;
+                    case WM_XBUTTONUP:
+                        but = (mInfo.mouseData >> 16 == 1) ? MouseButton.X1 : MouseButton.X2;
+                        pressedBtns.Remove(but);
+                        break;
+                        
+                    case WM_MOUSEWHEEL:
+                        wheelState = (mInfo.mouseData > 0) ? 6 : 7;
+                        MW_TICK = mInfo.time;
+                        break;
+
+                    case WM_MOUSEMOVE:
+                        MOUSE_X = mInfo.x;
+                        MOUSE_Y = mInfo.y;
+                        break;
+                }
             }
 
             return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
         }
+
+        #endregion
     }
 }

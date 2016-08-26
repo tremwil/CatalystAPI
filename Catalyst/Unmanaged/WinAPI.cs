@@ -79,9 +79,9 @@ namespace Catalyst.Unmanaged
     [StructLayout(LayoutKind.Sequential)]
     public struct KBINFO // Native name is KBDLLHOOKSTRUCT
     {
-        public uint vkCode;
-        public uint scanCode;
-        public uint flags;
+        public int vkCode;
+        public int scanCode;
+        public int flags;
         public uint time;
         public IntPtr dwExtraInfo;
     }
@@ -91,8 +91,8 @@ namespace Catalyst.Unmanaged
     {
         public int x;
         public int y;
-        public uint mouseData;
-        public uint flags;
+        public int mouseData;
+        public int flags;
         public uint time;
         public IntPtr dwExtraInfo;
     }
