@@ -35,7 +35,7 @@ namespace Catalyst.Display
         public bool OverlayEnabled { get; private set; }
 
         public bool Attached { get; private set; }
-        public bool IsDisplaying => Attached;
+        public bool Displaying { get; set; }
 
         public int TextSpacing { get; set; }
         public Point TextOffset { get; set; }
@@ -61,6 +61,7 @@ namespace Catalyst.Display
             autorizedToDraw = false;
             OverlayEnabled = false;
             Attached = false;
+            Displaying = true;
 
             TextFont = new Font("Courier New", 25, FontStyle.Bold);
             TextColor = Color.Red;
@@ -153,17 +154,19 @@ namespace Catalyst.Display
         {
             foreach (var rgn in invalidRegions)
                 Invalidate(rgn);
+
+            invalidRegions = new Rectangle[0];
         }
 
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
             UpdateWindowInfo();
 
-            if (Attached)
-            {
-                // Invalidate previous regions to
-                InvalidateOld();
+            // Invalidate previous regions
+            InvalidateOld();
 
+            if (Attached && Displaying)
+            {
                 Graphics g = Graphics.FromHwnd(IntPtr.Zero);
 
                 int pX = tgtWindowRect.x2 - TextOffset.X;
@@ -198,7 +201,7 @@ namespace Catalyst.Display
                 autorizedToDraw = true;
                 g.Dispose();
             }
-            else
+            else if (!Attached)
             {
                 AttachToTarget();
             }

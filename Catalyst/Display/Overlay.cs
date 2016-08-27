@@ -121,11 +121,15 @@ namespace Catalyst.Display
         /// <summary>
         /// A boolean indicating if the overlay is currently shown and working.
         /// </summary>
-        public static bool Displaying => overlayWnd.OverlayEnabled;
+        public static bool Running => overlayWnd.OverlayEnabled;
         /// <summary>
-        /// A boolean indicating the visibility of the overlay.
+        /// A boolean to get/set the visibility of the overlay.
         /// </summary>
-        public static bool Visible => overlayWnd.IsDisplaying;
+        public static bool Displaying
+        {
+            get { return overlayWnd.Displaying; }
+            set { SafeInvoke(f => f.Displaying = value); }
+        }
 
         /// <summary>
         /// Add an automatically updated field.
