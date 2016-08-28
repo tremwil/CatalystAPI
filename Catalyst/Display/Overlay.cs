@@ -402,7 +402,7 @@ namespace Catalyst.Display
         }
 
         /// <summary>
-        /// Make the overlay visible.
+        /// Make the overlay visible and attach it. To keep it attached, use the Displaying property.
         /// </summary>
         public static void Show()
         {
@@ -411,7 +411,7 @@ namespace Catalyst.Display
         }
 
         /// <summary>
-        /// Hide the overlay.
+        /// Hide the overlay  and detach it. To keep it attached, use the Displaying property..
         /// </summary>
         public static void Hide()
         {
