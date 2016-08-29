@@ -60,6 +60,17 @@ namespace Catalyst
         public Vec3 UnitVector => this / Magnitude;
 
         /// <summary>
+        /// The perpendicular vector on the right, ignoring the Y component.
+        /// </summary>
+        public Vec3 Right => new Vec3(-z, 0, x);
+
+        /// <summary>
+        /// The perpendicular vector on the left, ignoring the Y component.
+        /// </summary>
+        public Vec3 Left => new Vec3(z, 0, -x);
+
+
+        /// <summary>
         /// Create a Vec3 fronm its components.
         /// </summary>
         /// <param name="x">The x component.</param>

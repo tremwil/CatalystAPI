@@ -10,7 +10,7 @@ namespace Catalyst.Settings
     /// <summary>
     /// A class to read or change game settings.
     /// </summary>
-    public class Settings
+    public sealed class Settings
     {
         /// <summary>
         /// The path to the game's setting file.

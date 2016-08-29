@@ -15,28 +15,100 @@ namespace LibraryTestingProgram
     {
         static void Main(string[] args)
         {
-            MemoryManager mem = new MemoryManager();
+            InputController.EnableInputHook();
+            InputController.MakeProcessSpecific("MirrorsEdgeCatalyst");
+
+            Overlay.Enable(true);
+            Overlay.AddManualField("noclip", "NOCLIP OFF");
+
+            var mem = new MemoryManager();
             mem.OpenProcess("MirrorsEdgeCatalyst");
 
             var pinfo = new PlayerInfo(mem);
             var ginfo = new GameInfo(mem);
 
-            Overlay.AddAutoField("yaw", () => pinfo.GetCameraYaw() * Mathf.RadToDeg);
-            Overlay.Enable(true);
+            bool noclip = false;
+            DIKCode hotkey = DIKCode.F1;
 
-            //ginfo.SetTimescale(0);
-            var angle = pinfo.GetCameraYaw();
-            var pos = pinfo.GetPosition();
-            while (!Console.KeyAvailable)
+            DIKCode speedup = DIKCode.LEFT;
+            DIKCode speeddown = DIKCode.RIGHT;
+
+            bool lpress = false;
+            bool cpress = false;
+
+            Vec3 pos = Vec3.Zero;
+            Vec3 dpos;
+            Vec3 dir = Vec3.Zero;
+
+            float speed = 0.5f;
+            float loopspeed;
+
+            Overlay.AddAutoField("speed", () => speed, "SPEED: {0}");
+
+            while (true)
             {
-                angle += 0.004f;
-                pos += Vec3.AxisY * 0.05f;
-                pinfo.SetCameraYaw(angle);
-                pinfo.SetPosition(pos);
-                Thread.Sleep(5);
-            }
+                lpress = cpress;
+                cpress = InputController.IsKeyPressed(hotkey);
 
-            ginfo.SetTimescale(1);
+                if (InputController.IsKeyPressed(speedup))
+                    speed += 0.05f;
+
+                if (InputController.IsKeyPressed(speeddown))
+                    speed -= 0.05f;
+
+                if (lpress == false && cpress == true)
+                {
+                    noclip = !noclip;
+                    Overlay.UpdateManualField("noclip", "NOCLIP " + (noclip ? "ON" : "OFF"));
+
+                    if (noclip)
+                    {
+                        pos = pinfo.GetPosition();
+                        //ginfo.SetTimescale(0);
+                    }
+                    else
+                    {
+                        //ginfo.SetTimescale(1);
+                    }
+                }
+
+                if (noclip)
+                {
+                    dir = pinfo.GetCameraYawVector();
+                    dpos = Vec3.Zero;
+
+                    loopspeed = speed * 0.01f;
+
+                    if (InputController.IsGameActionPressed(GameAction.MoveForward))
+                        dpos += dir * loopspeed;
+
+                    if (InputController.IsGameActionPressed(GameAction.MoveRight))
+                        dpos += dir.Right * loopspeed;
+
+                    if (InputController.IsGameActionPressed(GameAction.MoveLeft))
+                        dpos += dir.Left * loopspeed;
+
+                    if (InputController.IsGameActionPressed(GameAction.MoveBackward))
+                    {
+                        dpos -= dir * loopspeed;
+                    }
+
+                    if (InputController.IsKeyPressed(DIKCode.SPACE))
+                    {
+                        dpos += Vec3.AxisY * loopspeed;
+                    }
+
+                    if (InputController.IsKeyPressed(DIKCode.LSHIFT))
+                    {
+                        dpos -= Vec3.AxisY * loopspeed;
+                    }
+
+                    pos += dpos;
+                    pinfo.SetPosition(pos);
+                }
+
+                Thread.Sleep(10);
+            }
         }
     }
 }

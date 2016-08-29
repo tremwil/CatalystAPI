@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 using Catalyst.Settings;
 using AutoHotkey.Interop;
 using System.Threading;
-using System.Diagnostics;
-using Catalyst.Unmanaged;
-using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace Catalyst.Input
 {
@@ -26,39 +24,20 @@ namespace Catalyst.Input
 
         #region hook related fields
 
-        private const int WM_KEYDOWN = 0x100;
-        private const int WM_KEYUP = 0x101;
+        private static InputForm hookWnd = new InputForm();
 
-        private const int WM_MOUSEMOVE = 0x200;
-        private static int MOUSE_X = 0;
-        private static int MOUSE_Y = 0; 
-
-        private const int WM_LBUTTONDOWN = 0x201;
-        private const int WM_LBUTTONUP = 0x202;
-
-        private const int WM_RBUTTONDOWN = 0x204;
-        private const int WM_RBUTTONUP = 0x205;
-
-        private const int WM_MBUTTONDOWN = 0x207;
-        private const int WM_MBUTTONUP = 0x208;
-
-        private const int WM_XBUTTONDOWN = 0x20B;
-        private const int WM_XBUTTONUP = 0x20C;
-
-        private const int WM_MOUSEWHEEL = 0x20A;
-        private const int MW_TIME_MS = 40;
-        private static uint MW_TICK = 0;
-
-        private const int WH_KEYBOARD_LL = 13;
-        private const int WH_MOUSE_LL = 14;
-
-        private static IntPtr hookKB = IntPtr.Zero;
-        private static IntPtr hookMS = IntPtr.Zero;
-        private static bool hookEnabled = false;
-
-        private static int wheelState = 0;
-        private static List<DIKCode> pressedKeys;
-        private static List<MouseButton> pressedBtns;
+        /// <summary>
+        /// True if the hook is enabled.
+        /// </summary>
+        public static bool Enabled => SafeInvoke(f => f.HookEnabled);
+        /// <summary>
+        /// The name of the target process for this hook. Empty string it's global.
+        /// </summary>
+        public static string TargetProcess => SafeInvoke(f => f.TargetProcName);
+        /// <summary>
+        /// True if the hook is set to only monitor events in a certain process.
+        /// </summary>
+        public static bool IsProcessSpecific => SafeInvoke(f => f.TargetProcName != "");
 
         #endregion
 
@@ -68,8 +47,13 @@ namespace Catalyst.Input
         {
             ahk = new AutoHotkeyEngine();
 
-            var sets = new Settings.Settings();
+            var sets = new Settings.Settings(); sets.Load();
             bindings = sets.Controls.AsArray();
+
+            Thread t = new Thread(() => Application.Run(hookWnd));
+            t.SetApartmentState(ApartmentState.STA);
+            t.IsBackground = true;
+            t.Start();
         }
 
         #endregion
@@ -125,7 +109,7 @@ namespace Catalyst.Input
         {
             var binding = bindings[(int)action];
 
-            if (binding.KeyBinding != DIKCode.DIK_NONE)
+            if (binding.KeyBinding != DIKCode.NONE)
                 SetKeyState(binding.KeyBinding, pressed);
 
             else if (binding.MouseBinding != MouseCode.None)
@@ -139,7 +123,7 @@ namespace Catalyst.Input
         public static void PressAction(GameAction action)
         {
             var binding = bindings[(int)action];
-            if (binding.KeyBinding != DIKCode.DIK_NONE)
+            if (binding.KeyBinding != DIKCode.NONE)
                 PressKey(binding.KeyBinding);
             else
                 PressButton(binding.MouseBinding);
@@ -212,39 +196,56 @@ namespace Catalyst.Input
 
         #region input hook functions
 
-        /// <summary>
-        /// Enable the global input hook.
-        /// </summary>
-        public static void EnableInputHook()
+        private delegate void SafeInvokeDelegate(InputForm f);
+        private static void SafeInvoke(Action<InputForm> action)
         {
-            if (hookEnabled) return;
+            if (hookWnd.InvokeRequired)
+                hookWnd.Invoke(new SafeInvokeDelegate(action), hookWnd);
 
-            pressedKeys = new List<DIKCode>();
-            pressedBtns = new List<MouseButton>();
+            else action(hookWnd);
+        }
 
-            string mname = Process.GetCurrentProcess().MainModule.ModuleName;
-            IntPtr hModule = WinAPI.GetModuleHandle(mname);
+        private delegate T SafeInvokeSetDelegate<T>(InputForm f);
+        private static T SafeInvoke<T>(Func<InputForm, T> action)
+        {
+            if (hookWnd.InvokeRequired)
+                return (T)hookWnd.Invoke(new SafeInvokeSetDelegate<T>(action), hookWnd);
 
-            hookKB = WinAPI.SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hModule, 0);
-            hookMS = WinAPI.SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, hModule, 0);
-
-            if (hookKB == IntPtr.Zero || hookMS == IntPtr.Zero)
-                throw new InvalidOperationException("Could not set global hook");
-
-            hookEnabled = true;
+            else return action(hookWnd);
         }
 
         /// <summary>
-        /// Disable the global input hooks.
+        /// Enable the input hook.
+        /// </summary>
+        public static void EnableInputHook()
+        {
+            SafeInvoke(f => f.EnableInputHook());
+        }
+
+        /// <summary>
+        /// Disable the input hook.
         /// </summary>
         public static void DisableInputHook()
         {
-            if (!hookEnabled) return;
+            SafeInvoke(f => f.DisableInputHook());
+        }
 
-            WinAPI.UnhookWindowsHookEx(hookKB);
-            WinAPI.UnhookWindowsHookEx(hookMS);
+        /// <summary>
+        /// Make the hook only monitor input when the given process is focused.
+        /// </summary>
+        /// <param name="procName"></param>
+        public static void MakeProcessSpecific(string procName)
+        {
+            SafeInvoke(f => f.MakeLocal(procName));
+        }
 
-            hookEnabled = false;
+        /// <summary>
+        /// Make the hook monitor input regardless of the focused process.
+        /// </summary>
+        /// <param name="procName"></param>
+        public static void MakeGlobal(string procName)
+        {
+            SafeInvoke(f => f.MakeGlobal());
         }
 
         /// <summary>
@@ -253,7 +254,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static DIKCode[] GetPressedKeys()
         {
-            return pressedKeys.ToArray();
+            return SafeInvoke(f => f.GetPressedKeys());
         }
 
         /// <summary>
@@ -262,13 +263,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static MouseButton[] GetPressedButtons()
         {
-            uint tickcount = unchecked((uint)Environment.TickCount);
-
-            if ((tickcount - MW_TICK) < MW_TIME_MS && wheelState != 0)
-                return pressedBtns.Concat(
-                    new MouseButton[1] { (MouseButton)wheelState }).ToArray();
-
-            return pressedBtns.ToArray();
+            return SafeInvoke(f => f.GetPressedButtons());
         }
 
         /// <summary>
@@ -278,7 +273,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static bool IsKeyPressed(DIKCode keyCode)
         {
-            return pressedKeys.Contains(keyCode);
+            return SafeInvoke(f => f.IsKeyPressed(keyCode));
         }
 
         /// <summary>
@@ -288,13 +283,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static bool IsButtonPressed(MouseButton btn)
         {
-            if (btn == MouseButton.WheelDown || btn == MouseButton.WheelUp)
-            {
-                uint tickcount = unchecked((uint)Environment.TickCount);
-                return wheelState == (int)btn && (tickcount - MW_TICK) < MW_TIME_MS;
-            }
-
-            return pressedBtns.Contains(btn);
+            return SafeInvoke(f => f.IsButtonPressed(btn));
         }
 
         /// <summary>
@@ -318,85 +307,13 @@ namespace Catalyst.Input
             return IsKeyPressed(binding.KeyBinding) || IsButtonPressed(binding.MouseBinding);
         }
 
-        #endregion
-
-        #region input hook procedures
-
-        private static IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam)
+        /// <summary>
+        /// Get the current position of the mouse as an integer tuple.
+        /// </summary>
+        /// <returns></returns>
+        public static Tuple<int, int> GetMousePos()
         {
-            int message = wParam.ToInt32();
-
-            if (nCode >= 0)
-            {
-                int scancode = Marshal.ReadInt32(lParam, 4);
-
-                DIKCode dik;
-                bool sucess = DIKCodes.TryParse(scancode, out dik);
-
-                if (sucess && message == WM_KEYDOWN)
-                    pressedKeys.Add(dik);
-
-                if (sucess && message == WM_KEYUP)
-                    pressedKeys.Remove(dik);
-            }
-
-            return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
-        }
-
-        private static IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            int message = wParam.ToInt32();
-
-            if (nCode >= 0)
-            {
-                MSINFO mInfo = Marshal.PtrToStructure<MSINFO>(lParam);
-                MouseButton but;
-
-                switch (message)
-                {
-                    case WM_LBUTTONDOWN:
-                        pressedBtns.Add(MouseButton.Left);
-                        break;
-                    case WM_LBUTTONUP:
-                        pressedBtns.Remove(MouseButton.Left);
-                        break;
-
-                    case WM_RBUTTONDOWN:
-                        pressedBtns.Add(MouseButton.Right);
-                        break;
-                    case WM_RBUTTONUP:
-                        pressedBtns.Remove(MouseButton.Right);
-                        break;
-
-                    case WM_MBUTTONDOWN:
-                        pressedBtns.Add(MouseButton.Middle);
-                        break;
-                    case WM_MBUTTONUP:
-                        pressedBtns.Remove(MouseButton.Middle);
-                        break;
-
-                    case WM_XBUTTONDOWN:
-                        but = (mInfo.mouseData >> 16 == 1) ? MouseButton.X1 : MouseButton.X2;
-                        pressedBtns.Add(but);
-                        break;
-                    case WM_XBUTTONUP:
-                        but = (mInfo.mouseData >> 16 == 1) ? MouseButton.X1 : MouseButton.X2;
-                        pressedBtns.Remove(but);
-                        break;
-                        
-                    case WM_MOUSEWHEEL:
-                        wheelState = (mInfo.mouseData > 0) ? 6 : 7;
-                        MW_TICK = mInfo.time;
-                        break;
-
-                    case WM_MOUSEMOVE:
-                        MOUSE_X = mInfo.x;
-                        MOUSE_Y = mInfo.y;
-                        break;
-                }
-            }
-
-            return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
+            return SafeInvoke(f => f.GetMousePos());
         }
 
         #endregion

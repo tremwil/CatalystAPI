@@ -56,7 +56,7 @@ namespace Catalyst.Input
         /// <param name="btn"></param>
         public InputBinding(MouseCode btn)
         {
-            KeyBinding = DIKCode.DIK_NONE;
+            KeyBinding = DIKCode.NONE;
             MouseBinding = btn;
         }
  
@@ -65,7 +65,7 @@ namespace Catalyst.Input
         /// </summary>
         public InputBinding()
         {
-            KeyBinding = DIKCode.DIK_NONE;
+            KeyBinding = DIKCode.NONE;
             MouseBinding = MouseCode.None;
         }
     }

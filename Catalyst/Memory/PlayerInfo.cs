@@ -104,7 +104,7 @@ namespace Catalyst.Memory
             }
 
             // Use double angle identities to multiply angle
-            return new Vec3(cos * cos - sin * sin, 2 * sin * cos);
+            return new Vec3(cos * cos - sin * sin, 0, -2 * sin * cos);
         }
 
         /// <summary>
@@ -115,10 +115,10 @@ namespace Catalyst.Memory
         {
             // Use half-angle identities
             float xover2 = unitVector.x * 0.5f;
-            float sin = (float)Math.Sqrt(0.5f - xover2);
-            float cos = (float)Math.Sqrt(0.5f + xover2);
+            float sin = -(float)Math.Sqrt(0.5f - xover2);
+            float cos =  (float)Math.Sqrt(0.5f + xover2);
 
-            if (unitVector.y < 0)
+            if (unitVector.z < 0)
             {
                 if (cos > 0.5f) sin = -sin;
                 else cos = -cos;

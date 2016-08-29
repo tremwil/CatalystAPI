@@ -72,6 +72,15 @@ namespace Catalyst.Unmanaged
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, [Out]StringBuilder lpExeName, ref int lpdwSize);
     }
 
     public delegate IntPtr LowLevelInputProc(int nCode, IntPtr wParam, IntPtr lParam);
