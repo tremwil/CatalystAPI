@@ -51,8 +51,8 @@ namespace Catalyst.Input
         public bool HookEnabled => hookEnabled;
 
         private int wheelState = 0;
-        private HashSet<DIKCode> pressedKeys = new HashSet<DIKCode>();
-        private HashSet<MouseButton> pressedBtns = new HashSet<MouseButton>();
+        private byte[] pressedKeys = new byte[0xfe];
+        private byte[] pressedBtns = new byte[0x07];
 
         public string TargetProcName { get; private set; }
         private bool keyInScope;
@@ -143,6 +143,11 @@ namespace Catalyst.Input
             if (hookKB == IntPtr.Zero || hookMS == IntPtr.Zero)
                 throw new InvalidOperationException("Could not set global hook");
 
+            // Get state of toggle keys
+            pressedKeys[0x3a] |= (byte)(WinAPI.GetKeyState(0x14) & 0x01); // caps lock
+            pressedKeys[0x46] |= (byte)(WinAPI.GetKeyState(0x91) & 0x01); // scroll lock
+            pressedKeys[0x45] |= (byte)(WinAPI.GetKeyState(0x90) & 0x01); // num lock
+
             hookEnabled = true;
             WindowCheck.Start();
         }
@@ -154,39 +159,26 @@ namespace Catalyst.Input
             WinAPI.UnhookWindowsHookEx(hookKB);
             WinAPI.UnhookWindowsHookEx(hookMS);
 
-            pressedKeys.Clear();
-            pressedBtns.Clear();
+            pressedKeys = new byte[0xfe];
+            pressedBtns = new byte[0x07];
             wheelState = 0;
 
             hookEnabled = false;
             WindowCheck.Stop();
         }
 
-        public DIKCode[] GetPressedKeys()
-        {
-            if (!keyInScope) { return new DIKCode[0]; }
-
-            return pressedKeys.ToArray();
-        }
-
-        public MouseButton[] GetPressedButtons()
-        {
-            if (!keyInScope) { return new MouseButton[0]; }
-
-            uint tickcount = unchecked((uint)Environment.TickCount);
-
-            if ((tickcount - MW_TICK) < MW_TIME_MS && wheelState != 0)
-                return pressedBtns.Concat(
-                    new MouseButton[1] { (MouseButton)wheelState }).ToArray();
-
-            return pressedBtns.ToArray();
-        }
-
         public bool IsKeyPressed(DIKCode keyCode)
         {
             if (!keyInScope) return false;
 
-            return pressedKeys.Contains(keyCode);
+            return (pressedKeys[(int)keyCode] & 0x02) != 0;
+        }
+
+        public bool IsKeyToggled(DIKCode keyCode)
+        {
+            if (!keyInScope) return false;
+
+            return (pressedKeys[(int)keyCode] & 0x01) != 0;
         }
 
         public bool IsButtonPressed(MouseButton btn)
@@ -199,7 +191,12 @@ namespace Catalyst.Input
                 return wheelState == (int)btn && (tickcount - MW_TICK) < MW_TIME_MS;
             }
 
-            return pressedBtns.Contains(btn);
+            return (pressedBtns[(int)btn] & 0x02) != 0;
+        }
+
+        public bool IsButtonToggled(MouseButton btn)
+        {
+            return (pressedBtns[(int)btn] & 0x01) != 0;
         }
 
         public Tuple<int, int> GetMousePos()
@@ -225,15 +222,14 @@ namespace Catalyst.Input
             if (nCode >= 0)
             {
                 int scancode = Marshal.ReadInt32(lParam, 4);
+                if ((scancode & 0xe000) != 0) scancode = (scancode & 0xff) + 0x80;
 
-                DIKCode dik;
-                bool sucess = DIKCodes.TryParse(scancode, out dik);
+                if (message == WM_KEYDOWN)
+                    pressedKeys[scancode] |= 0x02;
 
-                if (sucess && message == WM_KEYDOWN)
-                    pressedKeys.Add(dik);
-
-                if (sucess && message == WM_KEYUP)
-                    pressedKeys.Remove(dik);
+                if (message == WM_KEYUP)
+                    pressedKeys[scancode] &= 0x01;
+                    pressedKeys[scancode] ^= 0x01;
             }
 
             return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
@@ -246,42 +242,47 @@ namespace Catalyst.Input
             if (nCode >= 0)
             {
                 MSINFO mInfo = Marshal.PtrToStructure<MSINFO>(lParam);
-                MouseButton but;
+                int but;
 
                 switch (message)
                 {
                     case WM_LBUTTONDOWN:
-                        pressedBtns.Add(MouseButton.Left);
+                        pressedBtns[1] |= 0x02;
                         break;
                     case WM_LBUTTONUP:
-                        pressedBtns.Remove(MouseButton.Left);
+                        pressedBtns[1] &= 0x01;
+                        pressedBtns[1] ^= 0x01;
                         break;
 
                     case WM_RBUTTONDOWN:
-                        pressedBtns.Add(MouseButton.Right);
+                        pressedBtns[2] |= 0x02;
                         break;
                     case WM_RBUTTONUP:
-                        pressedBtns.Remove(MouseButton.Right);
+                        pressedBtns[2] &= 0x01;
+                        pressedBtns[2] ^= 0x01;
                         break;
 
                     case WM_MBUTTONDOWN:
-                        pressedBtns.Add(MouseButton.Middle);
+                        pressedBtns[3] |= 0x02;
                         break;
                     case WM_MBUTTONUP:
-                        pressedBtns.Remove(MouseButton.Middle);
+                        pressedBtns[3] &= 0x01;
+                        pressedBtns[3] ^= 0x01;
                         break;
 
                     case WM_XBUTTONDOWN:
-                        but = (mInfo.mouseData >> 16 == 1) ? MouseButton.X1 : MouseButton.X2;
-                        pressedBtns.Add(but);
+                        but = (mInfo.mouseData >> 16) + 3;
+                        pressedBtns[but] |= 0x02;
                         break;
                     case WM_XBUTTONUP:
-                        but = (mInfo.mouseData >> 16 == 1) ? MouseButton.X1 : MouseButton.X2;
-                        pressedBtns.Remove(but);
+                        but = (mInfo.mouseData >> 16) + 3;
+                        pressedBtns[but] &= 0x01;
+                        pressedBtns[but] ^= 0x01;
                         break;
 
                     case WM_MOUSEWHEEL:
                         wheelState = (mInfo.mouseData > 0) ? 6 : 7;
+                        pressedBtns[wheelState] ^= 0x01;
                         MW_TICK = mInfo.time;
                         break;
 
