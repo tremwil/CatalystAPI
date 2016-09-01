@@ -68,7 +68,12 @@
     <Compile Include="Display\Overlay.cs" />
     <Compile Include="Input\GameAction.cs" />
     <Compile Include="Input\InputController.cs" />
-    <Compile Include="Input\VirtualKey.cs" />
+    <Compile Include="Input\InputForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Input\InputForm.Designer.cs">
+      <DependentUpon>InputForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Mathf.cs" />
     <Compile Include="Memory\MovementState.cs" />
     <Compile Include="Memory\PlayerInfo.cs" />
@@ -100,6 +105,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Display\OverlayForm.resx">
       <DependentUpon>OverlayForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Input\InputForm.resx">
+      <DependentUpon>InputForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

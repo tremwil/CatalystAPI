@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 using Catalyst.Settings;
 using AutoHotkey.Interop;
 using System.Threading;
-
-using Catalyst.Unmanaged;
+using System.Windows.Forms;
 
 namespace Catalyst.Input
 {
@@ -16,27 +15,29 @@ namespace Catalyst.Input
     /// </summary>
     public static class InputController
     {
-        #region fields
+        #region sending related fields
 
         private static InputBinding[] bindings;
         private static AutoHotkeyEngine ahk;
 
-        private static TimerCallback tcallback = WindowCheck_Tick;
-        private static Timer WindowCheck = new Timer(tcallback, null, -1, 50);
-        private static bool keyInScope = false;
+        #endregion
+
+        #region hook related fields
+
+        private static InputForm hookWnd = new InputForm();
 
         /// <summary>
         /// True if the hook is enabled.
         /// </summary>
-        public static bool Enabled { get; private set;}
+        public static bool Enabled => SafeInvoke(f => f.HookEnabled);
         /// <summary>
         /// The name of the target process for this hook. Empty string it's global.
         /// </summary>
-        public static string TargetProcess { get; private set; }
+        public static string TargetProcess => SafeInvoke(f => f.TargetProcName);
         /// <summary>
         /// True if the hook is set to only monitor events in a certain process.
         /// </summary>
-        public static bool IsProcessSpecific => TargetProcess != "";
+        public static bool IsProcessSpecific => SafeInvoke(f => f.TargetProcName != "");
 
         #endregion
 
@@ -49,7 +50,10 @@ namespace Catalyst.Input
             var sets = new Settings.Settings(); sets.Load();
             bindings = sets.Controls.AsArray();
 
-            WindowCheck.Change(0, 50);
+            Thread t = new Thread(() => Application.Run(hookWnd));
+            t.SetApartmentState(ApartmentState.STA);
+            t.IsBackground = true;
+            t.Start();
         }
 
         #endregion
@@ -105,7 +109,7 @@ namespace Catalyst.Input
         {
             var binding = bindings[(int)action];
 
-            if (binding.KeyBinding != DIKCode.None)
+            if (binding.KeyBinding != DIKCode.NONE)
                 SetKeyState(binding.KeyBinding, pressed);
 
             else if (binding.MouseBinding != MouseCode.None)
@@ -119,7 +123,7 @@ namespace Catalyst.Input
         public static void PressAction(GameAction action)
         {
             var binding = bindings[(int)action];
-            if (binding.KeyBinding != DIKCode.None)
+            if (binding.KeyBinding != DIKCode.NONE)
                 PressKey(binding.KeyBinding);
             else
                 PressButton(binding.MouseBinding);
@@ -192,29 +196,38 @@ namespace Catalyst.Input
 
         #region input hook functions
 
-        private static void WindowCheck_Tick(object state)
+        private delegate void SafeInvokeDelegate(InputForm f);
+        private static void SafeInvoke(Action<InputForm> action)
         {
-            if (TargetProcess != "")
-            {
-                keyInScope = false;
+            if (hookWnd.InvokeRequired)
+                hookWnd.Invoke(new SafeInvokeDelegate(action), hookWnd);
 
-                IntPtr hWnd = WinAPI.GetForegroundWindow();
-                int pid; WinAPI.GetWindowThreadProcessId(hWnd, out pid);
-                IntPtr hProcess = WinAPI.OpenProcess(Memory.ProcessAccessFlags.QueryLimitedInformation, false, pid);
+            else action(hookWnd);
+        }
 
-                int capacity = 1024;
-                StringBuilder buff = new StringBuilder(capacity);
+        private delegate T SafeInvokeSetDelegate<T>(InputForm f);
+        private static T SafeInvoke<T>(Func<InputForm, T> action)
+        {
+            if (hookWnd.InvokeRequired)
+                return (T)hookWnd.Invoke(new SafeInvokeSetDelegate<T>(action), hookWnd);
 
-                if (WinAPI.QueryFullProcessImageName(hProcess, 0, buff, ref capacity))
-                {
-                    string fullPath = buff.ToString();
-                    keyInScope = TargetProcess == System.IO.Path.GetFileNameWithoutExtension(fullPath);
-                }
-            }
-            else
-            {
-                keyInScope = true;
-            }
+            else return action(hookWnd);
+        }
+
+        /// <summary>
+        /// Enable the input hook.
+        /// </summary>
+        public static void EnableInputHook()
+        {
+            SafeInvoke(f => f.EnableInputHook());
+        }
+
+        /// <summary>
+        /// Disable the input hook.
+        /// </summary>
+        public static void DisableInputHook()
+        {
+            SafeInvoke(f => f.DisableInputHook());
         }
 
         /// <summary>
@@ -223,15 +236,16 @@ namespace Catalyst.Input
         /// <param name="procName"></param>
         public static void MakeProcessSpecific(string procName)
         {
-            TargetProcess = procName;
+            SafeInvoke(f => f.MakeLocal(procName));
         }
 
         /// <summary>
         /// Make the hook monitor input regardless of the focused process.
         /// </summary>
-        public static void MakeGlobal()
+        /// <param name="procName"></param>
+        public static void MakeGlobal(string procName)
         {
-            TargetProcess = "";
+            SafeInvoke(f => f.MakeGlobal());
         }
 
         /// <summary>
@@ -240,7 +254,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static DIKCode[] GetPressedKeys()
         {
-            throw new NotImplementedException();
+            return SafeInvoke(f => f.GetPressedKeys());
         }
 
         /// <summary>
@@ -249,7 +263,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static MouseButton[] GetPressedButtons()
         {
-            throw new NotImplementedException();
+            return SafeInvoke(f => f.GetPressedButtons());
         }
 
         /// <summary>
@@ -259,7 +273,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static bool IsKeyPressed(DIKCode keyCode)
         {
-            throw new NotImplementedException();
+            return SafeInvoke(f => f.IsKeyPressed(keyCode));
         }
 
         /// <summary>
@@ -269,7 +283,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static bool IsButtonPressed(MouseButton btn)
         {
-            throw new NotImplementedException();
+            return SafeInvoke(f => f.IsButtonPressed(btn));
         }
 
         /// <summary>
@@ -279,7 +293,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static bool IsButtonPressed(MouseCode code)
         {
-            throw new NotImplementedException();
+            return IsButtonPressed(code.ToMouseButton());
         }
 
         /// <summary>
@@ -299,7 +313,7 @@ namespace Catalyst.Input
         /// <returns></returns>
         public static Tuple<int, int> GetMousePos()
         {
-            throw new NotImplementedException();
+            return SafeInvoke(f => f.GetMousePos());
         }
 
         #endregion

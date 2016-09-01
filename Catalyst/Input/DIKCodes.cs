@@ -12,7 +12,7 @@ namespace Catalyst.Input
         // No need for documentation here...
         #pragma warning disable 1591
 
-        None            = 0x00,   /* Not a real code, just a null value */
+        NONE            = 0x00,   /* Not a real code, just a null value */
         ESCAPE          = 0x01,
 	    D1              = 0x02,
 	    D2              = 0x03,
@@ -203,7 +203,7 @@ namespace Catalyst.Input
             }
             catch (InvalidCastException)
             {
-                dik = DIKCode.None;
+                dik = DIKCode.NONE;
                 return false;
             }
         }

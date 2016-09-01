@@ -71,7 +71,7 @@ namespace Catalyst.Settings
         /// <returns></returns>
         private InputBinding BindingFromFieldName(string fieldName)
         {
-            var ib = new InputBinding(DIKCode.None, MouseCode.None);
+            var ib = new InputBinding(DIKCode.NONE, MouseCode.None);
 
             foreach (var input in settingValues[fieldName])
             {
@@ -122,7 +122,7 @@ namespace Catalyst.Settings
             else
             {
                 tk["button"] = (int)newBind.KeyBinding;
-                if (newBind.KeyBinding == DIKCode.None) tk.Remove();
+                if (newBind.KeyBinding == DIKCode.NONE) tk.Remove();
             }
 
             // Mouse
