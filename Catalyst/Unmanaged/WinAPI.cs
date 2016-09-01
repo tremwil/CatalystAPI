@@ -81,12 +81,6 @@ namespace Catalyst.Unmanaged
 
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, [Out]StringBuilder lpExeName, ref int lpdwSize);
-
-        [DllImport("user32.dll")]
-        public static extern short GetAsyncKeyState(int nVirtKey);
-
-        [DllImport("user32.dll")]
-        public static extern uint MapVirtualKeyEx(uint uCode, uint uMapType, [Out][Optional] IntPtr dwhkl);
     }
 
     public delegate IntPtr LowLevelInputProc(int nCode, IntPtr wParam, IntPtr lParam);
