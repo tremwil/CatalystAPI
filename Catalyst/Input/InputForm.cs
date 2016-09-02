@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Catalyst.Unmanaged;
+using Catalyst.Native;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -25,18 +25,6 @@ namespace Catalyst.Input
         private int MOUSE_X = 0;
         private int MOUSE_Y = 0;
 
-        private const int WM_LBUTTONDOWN = 0x201;
-        private const int WM_LBUTTONUP = 0x202;
-
-        private const int WM_RBUTTONDOWN = 0x204;
-        private const int WM_RBUTTONUP = 0x205;
-
-        private const int WM_MBUTTONDOWN = 0x207;
-        private const int WM_MBUTTONUP = 0x208;
-
-        private const int WM_XBUTTONDOWN = 0x20B;
-        private const int WM_XBUTTONUP = 0x20C;
-
         private const int WM_MOUSEWHEEL = 0x20A;
         private const int MW_TIME_MS = 200;
         private uint MW_TICK = 0;
@@ -52,7 +40,6 @@ namespace Catalyst.Input
 
         private int wheelState = 0;
         private byte[] pressedKeys = new byte[0xfe];
-        private byte[] pressedBtns = new byte[0x07];
 
         public string TargetProcName { get; private set; }
         private bool keyInScope;
@@ -160,7 +147,6 @@ namespace Catalyst.Input
             WinAPI.UnhookWindowsHookEx(hookMS);
 
             pressedKeys = new byte[0xfe];
-            pressedBtns = new byte[0x07];
             wheelState = 0;
 
             hookEnabled = false;
@@ -171,32 +157,42 @@ namespace Catalyst.Input
         {
             if (!keyInScope) return false;
 
-            return (pressedKeys[(int)keyCode] & 0x02) != 0;
+            return (pressedKeys[(int)keyCode] & 2) != 0;
         }
 
         public bool IsKeyToggled(DIKCode keyCode)
         {
             if (!keyInScope) return false;
 
-            return (pressedKeys[(int)keyCode] & 0x01) != 0;
+            return (pressedKeys[(int)keyCode] & 1) != 0;
         }
 
         public bool IsButtonPressed(MouseButton btn)
         {
             if (!keyInScope) return false;
 
+            int ibtn = (int)btn;
+
             if (btn == MouseButton.WheelDown || btn == MouseButton.WheelUp)
             {
                 uint tickcount = unchecked((uint)Environment.TickCount);
-                return wheelState == (int)btn && (tickcount - MW_TICK) < MW_TIME_MS;
+                return wheelState == ibtn && (tickcount - MW_TICK) < MW_TIME_MS;
             }
 
-            return (pressedBtns[(int)btn] & 0x02) != 0;
+            return WinAPI.GetKeyState((ibtn > 3)? ibtn + 1 : ibtn) < 0;
         }
 
         public bool IsButtonToggled(MouseButton btn)
         {
-            return (pressedBtns[(int)btn] & 0x01) != 0;
+            if (!keyInScope) return false;
+
+            if (btn == MouseButton.WheelDown || btn == MouseButton.WheelUp)
+            {
+                return false;
+            }
+
+            int ibtn = (int)btn;
+            return (WinAPI.GetKeyState((ibtn > 3) ? ibtn + 1 : ibtn) & 1) == 1;
         }
 
         public Tuple<int, int> GetMousePos()
@@ -221,15 +217,20 @@ namespace Catalyst.Input
 
             if (nCode >= 0)
             {
-                int scancode = Marshal.ReadInt32(lParam, 4);
-                if ((scancode & 0xe000) != 0) scancode = (scancode & 0xff) + 0x80;
+                KBDLLHOOKSTRUCT kbInfo = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+                int scancode = kbInfo.scanCode;
+
+                if ((kbInfo.flags & 1) == 1) // Extended key
+                    scancode = (scancode & 0xff) + 0x80;
 
                 if (message == WM_KEYDOWN)
-                    pressedKeys[scancode] |= 0x02;
+                {
+                    if ((pressedKeys[scancode] & 2) == 0) pressedKeys[scancode] ^= 1;
+                    pressedKeys[scancode] |= 2;
+                }
 
                 if (message == WM_KEYUP)
-                    pressedKeys[scancode] &= 0x01;
-                    pressedKeys[scancode] ^= 0x01;
+                    pressedKeys[scancode] &= 1;
             }
 
             return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
@@ -241,48 +242,12 @@ namespace Catalyst.Input
 
             if (nCode >= 0)
             {
-                MSINFO mInfo = Marshal.PtrToStructure<MSINFO>(lParam);
-                int but;
+                MSLLHOOKSTRUCT mInfo = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
 
                 switch (message)
                 {
-                    case WM_LBUTTONDOWN:
-                        pressedBtns[1] |= 0x02;
-                        break;
-                    case WM_LBUTTONUP:
-                        pressedBtns[1] &= 0x01;
-                        pressedBtns[1] ^= 0x01;
-                        break;
-
-                    case WM_RBUTTONDOWN:
-                        pressedBtns[2] |= 0x02;
-                        break;
-                    case WM_RBUTTONUP:
-                        pressedBtns[2] &= 0x01;
-                        pressedBtns[2] ^= 0x01;
-                        break;
-
-                    case WM_MBUTTONDOWN:
-                        pressedBtns[3] |= 0x02;
-                        break;
-                    case WM_MBUTTONUP:
-                        pressedBtns[3] &= 0x01;
-                        pressedBtns[3] ^= 0x01;
-                        break;
-
-                    case WM_XBUTTONDOWN:
-                        but = (mInfo.mouseData >> 16) + 3;
-                        pressedBtns[but] |= 0x02;
-                        break;
-                    case WM_XBUTTONUP:
-                        but = (mInfo.mouseData >> 16) + 3;
-                        pressedBtns[but] &= 0x01;
-                        pressedBtns[but] ^= 0x01;
-                        break;
-
                     case WM_MOUSEWHEEL:
                         wheelState = (mInfo.mouseData > 0) ? 6 : 7;
-                        pressedBtns[wheelState] ^= 0x01;
                         MW_TICK = mInfo.time;
                         break;
 

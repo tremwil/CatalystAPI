@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AutoHotkey.Interop">
+      <HintPath>..\..\CatalystAPI\Catalyst\dll\AutoHotkey.Interop.dll</HintPath>
+    </Reference>
     <Reference Include="Catalyst">
       <HintPath>..\Catalyst\bin\Debug\Catalyst.dll</HintPath>
     </Reference>

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 #pragma warning disable 1591
 
 using Catalyst.Memory;
-namespace Catalyst.Unmanaged
+namespace Catalyst.Native
 {
     /// <summary>
     /// A wrapper around certain WINAPI functions.
@@ -84,37 +84,5 @@ namespace Catalyst.Unmanaged
 
         [DllImport("user32.dll")]
         public static extern short GetKeyState(int nVirtKey);
-    }
-
-    public delegate IntPtr LowLevelInputProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct KBINFO // Native name is KBDLLHOOKSTRUCT
-    {
-        public int vkCode;
-        public int scanCode;
-        public int flags;
-        public uint time;
-        public IntPtr dwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct MSINFO // Native name is MSLLHOOKSTRUCT
-    {
-        public int x;
-        public int y;
-        public int mouseData;
-        public int flags;
-        public uint time;
-        public IntPtr dwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT
-    {
-        public int x1; // x position of upper-left corner
-        public int y1; // y position of upper-left corner
-        public int x2; // x position of lower-right corner
-        public int y2; // y position of lower-right corner
     }
 }

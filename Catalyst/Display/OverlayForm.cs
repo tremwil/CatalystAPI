@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.Drawing.Text;
 
-using Catalyst.Unmanaged;
+using Catalyst.Native;
 
 namespace Catalyst.Display
 {

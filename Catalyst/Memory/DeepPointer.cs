@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
-using Catalyst.Unmanaged;
+using Catalyst.Native;
 using System.Diagnostics;
 
 namespace Catalyst.Memory

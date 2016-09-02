@@ -8,6 +8,8 @@ using AutoHotkey.Interop;
 using System.Threading;
 using System.Windows.Forms;
 
+using Catalyst.Native;
+
 namespace Catalyst.Input
 {
     /// <summary>
@@ -20,9 +22,19 @@ namespace Catalyst.Input
         private static InputBinding[] bindings;
         private static AutoHotkeyEngine ahk;
 
+        /* flags for WINAPI function mouse_event */
+
+        private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
+        private const uint MOUSEEVENTF_MOVE = 0x0001;
+
+        private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
+
+        private const int MOUSEEVENTF_WHEEL = 0x0800;
+        private const int WHEEL_DELTA = 120;
+
         #endregion
 
-        #region hook related fields
+        #region hook related properties/fields
 
         private static InputForm hookWnd = new InputForm();
 
@@ -46,9 +58,17 @@ namespace Catalyst.Input
         static InputController()
         {
             ahk = new AutoHotkeyEngine();
+            ahk.Reset();
 
-            var sets = new Settings.Settings(); sets.Load();
-            bindings = sets.Controls.AsArray();
+            try
+            {
+                var sets = new Settings.Settings(); sets.Load();
+                bindings = sets.Controls.AsArray();
+            }
+            catch (Exception)
+            {
+                bindings = new InputBinding[0];
+            }
 
             Thread t = new Thread(() => Application.Run(hookWnd));
             t.SetApartmentState(ApartmentState.STA);
@@ -67,10 +87,16 @@ namespace Catalyst.Input
         /// <param name="pressed"></param>
         public static void SetKeyState(DIKCode code, bool pressed)
         {
-            string scode = ((int)code).ToString("x3");
-            string state = pressed ? " up" : " down";
+            int scode = (int)code;
 
-            ahk.ExecRaw("Send {sc" + scode + state + "}");
+            // Move the DIK entension flag to a higher byte
+            // ex: DIK_RCONTROL (bin 1001 1100) -> bin 1 0001 1100
+            scode = (scode & 0x80) << 1 | scode & 0x7F;
+
+            string state = pressed ? "down" : "up";
+            string cmd = "send {{sc{0:X3} {1}}}";
+
+            ahk.ExecRaw(string.Format(cmd, scode, state));
         }
 
         /// <summary>
@@ -81,11 +107,11 @@ namespace Catalyst.Input
         /// <param name="pressed"></param>
         public static void SetButtonState(MouseButton btn, bool pressed)
         {
-            string scode = btn.ToString();
+            string sbtn = btn.ToString();
             string state = pressed ? "D" : "U";
-            string cmd = "MouseClick, {0}, , , 1, , {1}";
-
-            ahk.ExecRaw(string.Format(cmd, scode, state));
+            
+            string cmd = "MouseClick, {0} , , , 1 , , {1}, ";
+            ahk.ExecRaw(string.Format(cmd, sbtn, state));
         }
 
         /// <summary>
@@ -107,13 +133,13 @@ namespace Catalyst.Input
         /// <param name="pressed"></param>
         public static void SetGameActionState(GameAction action, bool pressed)
         {
-            var binding = bindings[(int)action];
+            if (bindings.Length == 0) return;
 
-            if (binding.KeyBinding != DIKCode.NONE)
-                SetKeyState(binding.KeyBinding, pressed);
+            var kb = bindings[(int)action].KeyBinding;
+            var ms = bindings[(int)action].MouseBinding;
 
-            else if (binding.MouseBinding != MouseCode.None)
-                SetButtonState(binding.MouseBinding, pressed);
+            if (kb != DIKCode.NONE) SetKeyState(kb, pressed);
+            if (ms != MouseCode.None) SetButtonState(ms, pressed);
         }
 
         /// <summary>
@@ -122,11 +148,19 @@ namespace Catalyst.Input
         /// <param name="action"></param>
         public static void PressAction(GameAction action)
         {
-            var binding = bindings[(int)action];
-            if (binding.KeyBinding != DIKCode.NONE)
-                PressKey(binding.KeyBinding);
-            else
-                PressButton(binding.MouseBinding);
+            PressAction(action, 20);
+        }
+
+        /// <summary>
+        /// triggers a game action by pressing its key. 
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="pressTimeMS">The amount of time to hold the key.</param>
+        public static void PressAction(GameAction action, int pressTimeMS)
+        {
+            SetGameActionState(action, true);
+            Thread.Sleep(pressTimeMS);
+            SetGameActionState(action, false);
         }
 
         /// <summary>
@@ -247,25 +281,7 @@ namespace Catalyst.Input
         {
             SafeInvoke(f => f.MakeGlobal());
         }
-
-        /// <summary>
-        /// Gets all the currently pressed keys.
-        /// </summary>
-        /// <returns></returns>
-        public static DIKCode[] GetPressedKeys()
-        {
-            return SafeInvoke(f => f.GetPressedKeys());
-        }
-
-        /// <summary>
-        /// Gets the currently pressed mouse buttons.
-        /// </summary>
-        /// <returns></returns>
-        public static MouseButton[] GetPressedButtons()
-        {
-            return SafeInvoke(f => f.GetPressedButtons());
-        }
-
+        
         /// <summary>
         /// Test if the given key is pressed.
         /// </summary>
@@ -274,6 +290,16 @@ namespace Catalyst.Input
         public static bool IsKeyPressed(DIKCode keyCode)
         {
             return SafeInvoke(f => f.IsKeyPressed(keyCode));
+        }
+
+        /// <summary>
+        /// Test if the given key is toggled.
+        /// </summary>
+        /// <param name="keyCode">The key code.</param>
+        /// <returns></returns>
+        public static bool IsKeyToggled(DIKCode keyCode)
+        {
+            return SafeInvoke(f => f.IsKeyToggled(keyCode));
         }
 
         /// <summary>
@@ -297,12 +323,34 @@ namespace Catalyst.Input
         }
 
         /// <summary>
+        /// Test if the given mouse button is toggled.
+        /// </summary>
+        /// <param name="btn">The mouse button.</param>
+        /// <returns></returns>
+        public static bool IsButtonToggled(MouseButton btn)
+        {
+            return SafeInvoke(f => f.IsButtonToggled(btn));
+        }
+
+        /// <summary>
+        /// Test if the given mouse button is toggled.
+        /// </summary>
+        /// <param name="code">The mouse code.</param>
+        /// <returns></returns>
+        public static bool IsButtonToggled(MouseCode code)
+        {
+            return IsButtonToggled(code.ToMouseButton());
+        }
+
+        /// <summary>
         /// Test if the given game action is pressed.
         /// </summary>
         /// <param name="action">The action to test for.</param>
         /// <returns></returns>
         public static bool IsGameActionPressed(GameAction action)
         {
+            if (bindings.Length == 0) return false;
+
             var binding = bindings[(int)action];
             return IsKeyPressed(binding.KeyBinding) || IsButtonPressed(binding.MouseBinding);
         }

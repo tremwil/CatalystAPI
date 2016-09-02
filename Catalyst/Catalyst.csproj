@@ -78,6 +78,8 @@
     <Compile Include="Memory\MovementState.cs" />
     <Compile Include="Memory\PlayerInfo.cs" />
     <Compile Include="Memory\ProcessAccess.cs" />
+    <Compile Include="Native\LLHookDefs.cs" />
+    <Compile Include="Native\RECT.cs" />
     <Compile Include="Settings\JsonPathList.cs" />
     <Compile Include="Input\InputBinding.cs" />
     <Compile Include="Input\MouseCode.cs" />
@@ -94,7 +96,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\VideoSettings.cs" />
     <Compile Include="Memory\GenericBitConverter.cs" />
-    <Compile Include="Unmanaged\WinAPI.cs" />
+    <Compile Include="Native\WinAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Catalyst.ruleset" />
