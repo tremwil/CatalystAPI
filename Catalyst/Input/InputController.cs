@@ -303,6 +303,25 @@ namespace Catalyst.Input
         }
 
         /// <summary>
+        /// Test if the given key was put down before the call. Use it in loops to toggle stuff.
+        /// </summary>
+        /// <param name="keyCode">The key code.</param>
+        /// <returns></returns>
+        public static bool OnKeyDown(DIKCode keyCode)
+        {
+            return SafeInvoke(f => f.WasKeyPressed(keyCode));
+        }
+
+        /// <summary>
+        /// Return all the pressed keys.
+        /// </summary>
+        /// <returns></returns>
+        public static DIKCode[] GetPressedKeys()
+        {
+            return SafeInvoke(f => f.GetPressedKeys());
+        }
+
+        /// <summary>
         /// Test if the given mouse button is pressed.
         /// </summary>
         /// <param name="btn">The mouse button.</param>

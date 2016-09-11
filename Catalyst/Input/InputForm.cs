@@ -167,6 +167,14 @@ namespace Catalyst.Input
             return (pressedKeys[(int)keyCode] & 1) != 0;
         }
 
+        public bool WasKeyPressed(DIKCode keyCode)
+        {
+            int val = pressedKeys[(int)keyCode] & 4;
+            pressedKeys[(int)keyCode] &= 3;
+
+            return val == 4;
+        }
+
         public bool IsButtonPressed(MouseButton btn)
         {
             if (!keyInScope) return false;
@@ -200,6 +208,18 @@ namespace Catalyst.Input
             return new Tuple<int, int>(MOUSE_X, MOUSE_Y);
         }
 
+        public DIKCode[] GetPressedKeys()
+        {
+            var pressed = new List<DIKCode>();
+            for (int i = 0; i < pressedKeys.Length; i++)
+            {
+                DIKCode dik = (DIKCode)i;
+                if (IsKeyPressed(dik)) pressed.Add(dik);
+            }
+
+            return pressed.ToArray();
+        }
+
         // Code to make the form completely invisible in alt-tab and similar menus
         protected override CreateParams CreateParams
         {
@@ -225,7 +245,11 @@ namespace Catalyst.Input
 
                 if (message == WM_KEYDOWN)
                 {
-                    if ((pressedKeys[scancode] & 2) == 0) pressedKeys[scancode] ^= 1;
+                    if ((pressedKeys[scancode] & 2) == 0)
+                    {
+                        pressedKeys[scancode] ^= 1;
+                        pressedKeys[scancode] |= 4;
+                    }
                     pressedKeys[scancode] |= 2;
                 }
 

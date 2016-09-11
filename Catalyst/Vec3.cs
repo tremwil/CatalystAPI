@@ -242,17 +242,7 @@ namespace Catalyst
             return a.Equals(b);
         }
 
-        public static bool operator ==(object b, Vec3 a)
-        {
-            return a.Equals(b);
-        }
-
         public static bool operator !=(Vec3 a, object b)
-        {
-            return !a.Equals(b);
-        }
-
-        public static bool operator !=(object b, Vec3 a)
         {
             return !a.Equals(b);
         }

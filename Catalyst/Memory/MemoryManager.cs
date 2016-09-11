@@ -197,8 +197,12 @@ namespace Catalyst.Memory
         /// </summary>
         public void ReleaseProcess()
         {
-            Process.Dispose();
-            Process = null;
+            if (Process != null)
+            {
+                Process.Dispose();
+                Process = null;
+            }
+
             WinAPI.CloseHandle(ProcHandle);
             ProcHandle = IntPtr.Zero;
         }
