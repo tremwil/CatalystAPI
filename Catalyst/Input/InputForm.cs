@@ -21,6 +21,9 @@ namespace Catalyst.Input
         private const int WM_KEYDOWN = 0x100;
         private const int WM_KEYUP = 0x101;
 
+        private const int WM_SYSKEYDOWN = 0x104;
+        private const int WM_SYSKEYUP = 0x105;
+
         private const int WM_MOUSEMOVE = 0x200;
         private int MOUSE_X = 0;
         private int MOUSE_Y = 0;
@@ -169,6 +172,8 @@ namespace Catalyst.Input
 
         public bool WasKeyPressed(DIKCode keyCode)
         {
+            if (!keyInScope) return false;
+
             int val = pressedKeys[(int)keyCode] & 4;
             pressedKeys[(int)keyCode] &= 3;
 
@@ -210,6 +215,8 @@ namespace Catalyst.Input
 
         public DIKCode[] GetPressedKeys()
         {
+            if (!keyInScope) return new DIKCode[] { };
+
             var pressed = new List<DIKCode>();
             for (int i = 0; i < pressedKeys.Length; i++)
             {
@@ -243,7 +250,7 @@ namespace Catalyst.Input
                 if ((kbInfo.flags & 1) == 1) // Extended key
                     scancode = (scancode & 0xff) + 0x80;
 
-                if (message == WM_KEYDOWN)
+                if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
                 {
                     if ((pressedKeys[scancode] & 2) == 0)
                     {
@@ -253,7 +260,7 @@ namespace Catalyst.Input
                     pressedKeys[scancode] |= 2;
                 }
 
-                if (message == WM_KEYUP)
+                if (message == WM_KEYUP || message == WM_SYSKEYUP)
                     pressedKeys[scancode] &= 1;
             }
 

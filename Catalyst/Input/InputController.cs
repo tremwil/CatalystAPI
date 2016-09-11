@@ -276,8 +276,7 @@ namespace Catalyst.Input
         /// <summary>
         /// Make the hook monitor input regardless of the focused process.
         /// </summary>
-        /// <param name="procName"></param>
-        public static void MakeGlobal(string procName)
+        public static void MakeGlobal()
         {
             SafeInvoke(f => f.MakeGlobal());
         }
