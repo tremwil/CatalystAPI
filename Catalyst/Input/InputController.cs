@@ -302,6 +302,16 @@ namespace Catalyst.Input
         }
 
         /// <summary>
+        /// Set the toggled state of a given key. This does NOT simulate a key press.
+        /// </summary>
+        /// <param name="keyCode">The key code.</param>
+        /// <param name="toggled">The state of the key.</param>
+        public static void SetToggledFlag(DIKCode keyCode, bool toggled)
+        {
+            SafeInvoke(f => f.SetToggleState(keyCode, toggled));
+        }
+
+        /// <summary>
         /// Test if the given key was put down before the call. Use it in loops to toggle stuff.
         /// </summary>
         /// <param name="keyCode">The key code.</param>

@@ -170,6 +170,15 @@ namespace Catalyst.Input
             return (pressedKeys[(int)keyCode] & 1) != 0;
         }
 
+        public void SetToggleState(DIKCode keyCode, bool toggled)
+        {
+            if (toggled)
+                pressedKeys[(int)keyCode] |= 1;
+
+            else
+                pressedKeys[(int)keyCode] &= 0xFD;
+        }
+
         public bool WasKeyPressed(DIKCode keyCode)
         {
             if (!keyInScope) return false;
@@ -261,7 +270,7 @@ namespace Catalyst.Input
                 }
 
                 if (message == WM_KEYUP || message == WM_SYSKEYUP)
-                    pressedKeys[scancode] &= 1;
+                    pressedKeys[scancode] &= 0xFD;
             }
 
             return WinAPI.CallNextHookEx(hookKB, nCode, wParam, lParam);
