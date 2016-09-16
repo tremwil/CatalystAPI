@@ -30,7 +30,7 @@ namespace Catalyst.Settings
         /// </summary>
         public Settings()
         {
-            rawSettings = new JObject();
+            rawSettings = JsonPathList.FromFile("DEFAULT_SAVE");
 
             Audio = new AudioSettings(this);
             Video = new VideoSettings(this);
@@ -46,7 +46,7 @@ namespace Catalyst.Settings
             rawSettings.RemoveAll(); // Clear the settings first
             try
             {
-                rawSettings = JsonPathList.FromFile(SettingsPath);
+                rawSettings = JsonPathList.FromFile(SettingsPath, rawSettings);
             }
             catch (Exception)
             {

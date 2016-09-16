@@ -17,13 +17,14 @@ namespace Catalyst.Settings
         /// Create a JSON object from the path list.
         /// </summary>
         /// <param name="filePath">The path of the file.</param>
+        /// <param name="baseObj">A default object to use.</param>
         /// <returns></returns>
-        public static JObject FromFile(string filePath)
+        public static JObject FromFile(string filePath, JObject baseObj = null)
         {
             string[] vsplit;
             string[] pnames;
 
-            JObject json = new JObject();
+            JObject json = baseObj ?? new JObject();
             JToken lastRoot;
             object prop;
             string value;
