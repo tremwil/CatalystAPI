@@ -49,6 +49,35 @@ namespace Catalyst.Memory
         }
 
         /// <summary>
+        /// Get the last position of Faith which resides on the ground.
+        /// </summary>
+        /// <returns></returns>
+        public Vec3 GetLastGroundPos()
+        {
+            return MemManager.ReadGenericPtr<Vec3>(0, 0x1423DA028, 0x20, 0x20, 0x40, 0x20, 0x00);
+        }
+
+        /// <summary>
+        /// Set the last position of Faith which resides on the ground.
+        /// </summary>
+        /// <param name="newPos">The new position value.</param>
+        /// <returns></returns>
+        public void SetLastGroundPos(Vec3 newPos)
+        {
+            MemManager.WriteGenericPtr(newPos, 0, 0x1423DA028, 0x20, 0x20, 0x40, 0x20, 0x00);
+        }
+
+        /// <summary>
+        /// Set the last Y coord of Faith which resides on the ground.
+        /// </summary>
+        /// <param name="newY">The new Y coordinate.</param>
+        /// <returns></returns>
+        public void SetLastGroundYCoord(float newY)
+        {
+            MemManager.WriteGenericPtr(newY, 0, 0x1423DA028, 0x20, 0x20, 0x40, 0x20, 0x04);
+        }
+
+        /// <summary>
         /// Get the current orientation of the camera, as radians.
         /// </summary>
         /// <returns></returns>

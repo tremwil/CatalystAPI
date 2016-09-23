@@ -81,5 +81,23 @@ namespace Catalyst.Memory
 
             MemManager.WriteGenericPtr(newValue, 0, 0x14255C2F8, 0x8, 0x28, 0x30);
         }
+
+        /// <summary>
+        /// Gets the coordinates of the in-game waypoint.
+        /// </summary>
+        /// <returns></returns>
+        public Vec3 GetWaypointPos()
+        {
+            return MemManager.ReadGenericPtr<Vec3>(0, 0x1425789B0, 0x70, 0x128, 0x2270);
+        }
+
+        /// <summary>
+        /// Sets the coordinates of the waypoint to a specific value.
+        /// </summary>
+        /// <param name="position"></param>
+        public void SetWaypointPos(Vec3 position)
+        {
+            MemManager.WriteGenericPtr(position, 0, 0x1425789B0, 0x70, 0x128, 0x2270);
+        }
     }
 }
