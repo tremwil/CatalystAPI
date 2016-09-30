@@ -36,8 +36,7 @@ namespace Catalyst.Memory
         /// <returns></returns>
         public bool IsLoading()
         {
-            byte val = MemManager.ReadGenericPtr<byte>(0, 0x14240c2b8, 0x4c1);
-            return Convert.ToBoolean(val);
+            return MemManager.ReadGeneric<int>(0x142576fdc) == -1;
         }
 
         /// <summary>

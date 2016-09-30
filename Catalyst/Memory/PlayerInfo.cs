@@ -167,5 +167,28 @@ namespace Catalyst.Memory
         {
             return MemManager.ReadGenericPtr<MovementState>(0, 0x142576fdc);
         }
+
+        /// <summary>
+        /// Returns the health of the player, from 1 to 7. A value smaller than 1 means dead.
+        /// </summary>
+        /// <returns></returns>
+        public int GetHealth()
+        {
+            return (int)MemManager.ReadGenericPtr<float>(0, 0x142547F90, 0x28, 0x0, 0x20);
+        }
+
+        /// <summary>
+        /// Sets the player's health to the given value. Valid range is from 1 to 7.
+        /// </summary>
+        /// <param name="newHealth">The new health value, in range [1, 7].</param>
+        public void SetHealth(int newHealth)
+        {
+            if (newHealth < 1 || newHealth > 7)
+            {
+                throw new ArgumentOutOfRangeException("newHealth");
+            }
+
+            MemManager.WriteGenericPtr<float>(newHealth, 0, 0x142547F90, 0x28, 0x0, 0x20);
+        }
     }
 }
